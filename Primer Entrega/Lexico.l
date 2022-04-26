@@ -60,7 +60,6 @@ int abrirTablaDeSimbolos();
 DIGITO		        ([0-9])
 LETRA			[a-zA-Z]
 CARACTERES              @|\?|\"|\.|\,|\+|\t|\n|\/|\_|\:|\;|¿|\*|{LETRA}|{DIGITO}|" "|=|\*|>|<|-  
-LONG                    "LONG"
 
 
 COMA                    [,]
