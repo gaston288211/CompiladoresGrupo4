@@ -68,21 +68,21 @@ PAR_C	                [)]
 COR_A                   [[]
 COR_C                   []]
 PYC                     [;]
-DP			[:]                     
+DP			            [:]                     
 
 
 BETWEEN                 "BETWEEN"
-DISPLAY                 "DISPLAY"
-GET                     "GET"
-IF			"IF"
+WRITE                   "WRITE"
+READ                    "READ"
+IF			            "IF"
 ENDIF                   "ENDIF"
 WHILE	            	"WHILE"
-DECVAR		        "DECVAR"
-ENDDEC		        "ENDDEC"
+DECVAR		            "DECVAR"
+ENDDEC		            "ENDDEC"
 INTEGER	            	"INTEGER"
 STRING                  "STRING"
-FLOAT		        "FLOAT"
-ELSE		        "ELSE"
+FLOAT		            "FLOAT"
+ELSE		            "ELSE"
 AND                     "AND"
 OR                      "OR"
 NOT                     "NOT"
@@ -115,7 +115,6 @@ OP_RESTA                [-]
 
 %%
 
-{LONG}           {printf("\nLONG: %s\n",yytext); return LONG;}
 {DECVAR}         {printf("\nDECVAR: %s\n",yytext);return DECVAR;}
 {READ}           {printf("\nREAD: %s\n",yytext);return READ;}
 {ENDDEC}         {printf("\nENDDEC: %s\n",yytext);return ENDDEC;}
