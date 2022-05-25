@@ -146,7 +146,6 @@ OP_RESTA                [-]
 {ID}               {printf("\nID Variable: %s\n",validarRangoID(yytext));return ID;}
 {COMA}             {printf("\nComa: %s\n",yytext);return COMA;}
 
-{COMENTARIO}   
 
 
  
@@ -178,7 +177,9 @@ OP_RESTA                [-]
 "\r" 
 "\n\t" 
 "\r\n"               
-" "                 
+" "      
+
+{COMENTARIO}              
 .                yyerror(yytext);
 
 %%

@@ -24,14 +24,14 @@ int yyerror();
 
 
 %%
-
 programa:
-    sentencia                       {printf("\nREGLA 1: <programa> --> <sentencia>\n");}       
-    | programa sentencia            {printf("\nREGLA 2: <programa> --> <programa> <sentencia>\n");};              
+    declaracion bloque          {printf("\nREGLA 1: <programa> --> <declaracion> <bloque>\n");} 
+bloque:
+    sentencia                       {printf("\nREGLA 1: <bloque> --> <sentencia>\n");}       
+    | bloque sentencia            {printf("\nREGLA 2: <bloque> --> <bloque> <sentencia>\n");};              
     
 sentencia:
-     declaracion                     {printf("\nREGLA 3: <sentencia> --> <declaracion>\n");}  
-    |asignacion                      {printf("\nREGLA 4: <sentencia> --> <asignacion>\n");}   
+     asignacion                      {printf("\nREGLA 4: <sentencia> --> <asignacion>\n");}   
     |ciclo                           {printf("\nREGLA 5: <sentencia> --> <ciclo>\n");}   
     |seleccion                       {printf("\nREGLA 6: <sentencia> --> <seleccion>\n");}   
     |salida                          {printf("\nREGLA 7: <sentencia> --> <salida>\n");}   
@@ -42,8 +42,10 @@ sentencia:
 
 
 declaracion:
-    DECVAR listavar DP tipodato ENDDEC    {printf("\nREGLA 11: <declaracion> --> DECVAR <listavar> DP <tipodato> ENDDEC\n");};    
-
+    DECVAR listaDeclaraciones  ENDDEC    {printf("\nREGLA 11: <declaracion> --> DECVAR <listaDeclaraciones> ENDDEC\n");};    
+listaDeclaraciones:
+    listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
+    |listaDeclaraciones listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listaDeclaraciones> <listavar> DP <tipodato> \n");};    
 listavar:
     ID                              {printf("\nREGLA 12: <listavar> --> ID \n");}
     | listavar COMA ID              {printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");};
@@ -54,11 +56,11 @@ tipodato:
     | STRING                        {printf("\nREGLA 16: <tipodato> --> STRING \n");};
 
 seleccion:
-    IF condicion THEN programa ELSE programa ENDIF      {printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <programa> ELSE <programa> ENDIF\n");}
-    | IF condicion THEN programa ENDIF                  {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <programa> ENDIF \n");};
+    IF condicion THEN bloque ELSE bloque ENDIF      {printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
+    | IF condicion THEN bloque ENDIF                  {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
 
 ciclo:
-    WHILE ID IN COR_A lista COR_C DO programa ENDWHILE         {printf("\nREGLA 19: <ciclo> --> WHILE ID IN COR_A <lista> COR_C DO <sentencia> ENDWHILE\n");};
+    WHILE ID IN COR_A lista COR_C DO bloque ENDWHILE         {printf("\nREGLA 19: <ciclo> --> WHILE ID IN COR_A <lista> COR_C DO <sentencia> ENDWHILE\n");};
 
 entrada:
     READ ID                                          {printf("\nREGLA 20: <entrada> --> READ <factor>\n");};
@@ -103,10 +105,10 @@ factor:
 comparador:
     OP_MAY          {printf("\nREGLA 42: <comparador> --> <OP_MAY>\n");} 
     | OP_MEN        {printf("\nREGLA 43: <comparador> --> <OP_MEN>\n");} 
-    | OP_MENIGU     {printf("\nREGLA 44: <programa> --> <OP_MENIGU>\n");} 
-    | OP_MAYIGU     {printf("\nREGLA 45: <programa> --> <OP_MAYIGU>\n");} 
-    | OP_IGUAL      {printf("\nREGLA 46: <programa> --> <OP_IGUAL>\n");} 
-    | OP_DIF        {printf("\nREGLA 47: <programa> --> <OP_DIF>\n");};
+    | OP_MENIGU     {printf("\nREGLA 44: <bloque> --> <OP_MENIGU>\n");} 
+    | OP_MAYIGU     {printf("\nREGLA 45: <bloque> --> <OP_MAYIGU>\n");} 
+    | OP_IGUAL      {printf("\nREGLA 46: <bloque> --> <OP_IGUAL>\n");} 
+    | OP_DIF        {printf("\nREGLA 47: <bloque> --> <OP_DIF>\n");};
 
 between:
     BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C	{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
