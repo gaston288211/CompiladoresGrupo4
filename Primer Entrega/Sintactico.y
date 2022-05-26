@@ -67,7 +67,8 @@ salida:
     WRITE CTE_STRING                                   {printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");};
 
 asignacion:
-    ID OP_ASIG expresion                                {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");};
+    ID OP_ASIG expresion                                {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");}
+    | ID OP_ASIG CTE_STRING                 {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");};
 
 condicion:
     comparacion                                         {printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
