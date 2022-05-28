@@ -1,10 +1,11 @@
-NOMBRE			TIPO			VALOR			LONGITUD
-_a			-			-			0
-_2			-			2			0
-_b			-			-			0
-_7			-			7			0
-_12			-			12			0
-_34			-			34			0
-_d			-			-			0
-_48			-			48			0
-_z			-			-			0
+NOMBRE				TIPO				VALOR				LONGITUD
+_a1				-				-				0
+_b1				-				-				0
+_variable1				-				-				0
+_p1				-				-				0
+_p2				-				-				0
+_p3				-				-				0
+_HOLA_MUNDO				CTE_STRING				"HOLA MUNDO"				10
+_CHAU_MUNDO				CTE_STRING				"CHAU MUNDO"				10
+_var				-				-				0
+_-32768				CTE_INTEGER				-32768				0

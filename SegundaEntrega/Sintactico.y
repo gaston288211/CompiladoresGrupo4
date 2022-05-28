@@ -6,12 +6,65 @@
 #include <stdlib.h>
 
 #include "y.tab.h"
+
+#define STR_LIMITE 30
+#define ID_LIMITE 30
+#define ENT_LIMITE 5
+#define TABLA_SIMBOLOS_TXT "ts.txt"
+
+#define COTA_INFERIOR_ENT -32768
+#define COTA_SUPERIOR_ENT 32767
+
+#define COTA_SUPERIOR_REAL 3.4028235E+38
+#define COTA_INFERIOR_REAL -3.4028235E+38
+
 int yystopparser=0;
+//FILE  *yyin;
+//int yylex();
+//int yyparse();
+//extern int yyerror();
+
+
+typedef struct
+{
+    char nombre[200];
+    char tipo[30];
+    char valor[200];
+    int longitud;   
+
+}tablaSimbolos;
+
+tablaSimbolos tb[2000];
+int cantReg=0;
 FILE  *yyin;
-int yylex();
-int yyparse();
-int yyerror();
+FILE * fpTabla;
+//int yylval;
+extern int yylex();
+//int yyparse();
+extern char * yyerror();
+
+
+char* validarRangoString( char *text );
+char* validarRangoEntero( char *text );
+char* validarRangoID( char *text );
+char* validarRangoReal( char *text );
+void escribirTablaSimbolos();
+void cargarVecTablaString(char * text, char * tipo);
+void cargarVecTablaID(char * text);
+void cargarVecTablaNumero(char * text, char * tipo);
+int abrirTablaDeSimbolos();
+
+/// segunda entrega
+t_lista listaPolaca;
+tStack pilaNumCelda;
+
+int cont=1;
+
+
 %}
+%union{
+    char* strVal;
+}
 
 %start programa 
 %right OP_ASIG 
@@ -23,8 +76,10 @@ int yyerror();
 %token WHILE IF INTEGER FLOAT STRING ELSE THEN DECVAR ENDDEC IN AND OR NOT LONG BETWEEN INLIST
 %token WRITE COMA ENDIF ENDWHILE DO READ PAR_A PAR_C COR_A COR_C PYC DP
 
-%token ID CTE_INTEGER CTE_FLOAT CTE_STRING
-
+%token <strVal> ID
+%token <strVal> CTE_INTEGER
+%token <strVal> CTE_FLOAT    
+%token <strVal> CTE_STRING
 
 %%
 programa:
@@ -104,11 +159,13 @@ factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 38: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     | CTE_FLOAT                 {
                                     printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
-                                    insertar_en_polaca(&listaPolaca,$1,cont++)
+                                    //insertar_en_polaca(&listaPolaca,$1,cont++);
                                 } 
     | ID                        {
+                                    
+                                    insertar_en_polaca(&listaPolaca,$1,cont++);
                                     printf("\nREGLA 40: <factor> --> ID\n");
-                                    insertar_en_polaca(&listaPolaca,$1,cont++)
+                                    
                                 } 
     | CTE_INTEGER                 {printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");};
 
@@ -132,3 +189,217 @@ inlist:
 
 
 %%
+
+
+
+int main(int argc,char *argv[])
+{
+    
+    abrirTablaDeSimbolos();
+    
+    createListaPolaca(&listaPolaca);
+    createStack(&pilaNumCelda);
+
+if ((yyin = fopen(argv[1], "rt")) == NULL)
+    {
+        printf("\nNo se puede abrir el archivo: %s\n", argv[1]);
+    }
+else
+    {
+        yyparse();
+    }
+    escribirTablaSimbolos();
+    
+    vaciar_polaca(&listaPolaca);
+    fclose(fpTabla);
+    fclose(yyin);
+    return 1;
+}
+
+
+
+
+char* validarRangoString( char *text ){
+    char * tipo ="CTE_STRING";
+    if(strlen(text)>STR_LIMITE)
+{
+            printf("Eror String: %s - ",text);
+            return yyerror();
+        }
+else{
+            cargarVecTablaString(text,tipo);
+          return text;
+}
+}
+
+
+char* validarRangoID( char *text ){
+    if(strlen(text)>ID_LIMITE)
+{
+        printf("Eror ID: %s - ",text);
+        return yyerror();
+}
+else{
+
+        cargarVecTablaID(text);
+          return text;
+    } 
+}
+
+
+char* validarRangoEntero( char *text ){
+    char* tipo ="CTE_INTEGER";
+printf("Valor del entero : %s\n",text+1 );
+    if(*text == '-') 
+    {
+        if( strlen( text+1 ) > ENT_LIMITE || atoi(text) < COTA_INFERIOR_ENT )
+        {
+           printf("Eror constante entera fuera del limite: %s - ",text);
+            return yyerror();
+        }
+
+
+    }else
+    {
+        if( strlen( text ) > ENT_LIMITE || atoi(text)> COTA_SUPERIOR_ENT )
+        {
+             printf("Eror constante entera fuera del limite: %s - ",text);
+            return yyerror();
+        }
+   
+    }
+ cargarVecTablaNumero(text, tipo);
+ return text;
+}
+
+
+char* validarRangoReal( char *text ){
+    char * tipo ="CTE_FLOAT";
+    if(atof(text) > COTA_SUPERIOR_REAL|| atof(text) <  COTA_INFERIOR_REAL) 
+        {
+            printf("Eror Real: %s - ",text);
+            return yyerror();
+        }
+        else{
+            
+        cargarVecTablaNumero(text, tipo );
+          return text;
+        }
+   
+}
+
+int abrirTablaDeSimbolos()
+{
+    fpTabla = fopen(TABLA_SIMBOLOS_TXT,"wt");
+    if(!fpTabla)
+    {
+        printf("Error de apertura del archivo de la tabla de simbolos");
+        return 0;
+    }
+    return 1;
+}
+
+void escribirTablaSimbolos()
+{ 
+    int i;
+    fprintf(fpTabla,"NOMBRE\t\t\t\tTIPO\t\t\t\tVALOR\t\t\t\tLONGITUD\n");
+    for(i = 0 ; i < cantReg; i++)
+    {
+        fprintf(fpTabla,"%-s\t\t\t\t%-s\t\t\t\t%-s\t\t\t\t%-d\n",tb[i].nombre ,tb[i].tipo ,tb[i].valor,tb[i].longitud);
+    }
+}
+
+void cargarVecTablaNumero(char * text, char * tipo)
+{
+   int duplicados = 0,j;
+    for ( j=0 ;j< cantReg; j++)
+    {
+        if(strcmp(text,(tb[j].nombre)+1)==0)
+            duplicados = 1;      
+    }
+
+    if(!duplicados){
+        int tamanio=strlen(text),i;
+        char aux[tamanio+2];
+        aux[0]='_';
+        for (i=1; i<= tamanio ; i++ )
+        {
+            aux[i]=*(text+i-1);
+
+        }
+        aux[i]='\0';
+        strcpy(tb[cantReg].nombre,aux);
+        strcpy(tb[cantReg].valor,text);
+        strcpy(tb[cantReg].tipo,tipo);
+         
+        tb[cantReg].longitud = 0;
+        //printf("\nNombre : %s   -   Valor : %s -   longitud :    %d\n",tb[cantReg].nombre , tb[cantReg].valor,tb[cantReg].longitud);
+
+        cantReg++;
+    }
+
+
+
+}
+
+void cargarVecTablaID(char * text)
+{
+    
+    int duplicados = 0,j;
+    for ( j=0 ;j< cantReg; j++)
+    {
+        if(strcmp(text,(tb[j].nombre)+1)==0)
+            duplicados = 1;      
+    }
+    if(!duplicados)
+    {
+        int tamanio=strlen(text),i;
+        char aux[tamanio+2];
+        aux[0]='_';
+        for (i=1; i<= tamanio ; i++ )
+        {
+            aux[i]=*(text+i-1);
+        }
+        aux[tamanio+1]='\0';
+        strcpy(tb[cantReg].nombre,aux);
+        strcpy(tb[cantReg].valor,"-\0");
+        tb[cantReg].tipo[0] ='-';
+        tb[cantReg].tipo[1] ='\0'; 
+        tb[cantReg].longitud = 0;
+        //printf("\nNombre : %s   -   Valor : %s -   longitud :    %d\n",tb[cantReg].nombre,tb[cantReg].valor,tb[cantReg].longitud);
+        cantReg++;
+    }
+  
+}
+
+
+void cargarVecTablaString(char * text, char* tipo)
+{  
+
+        int duplicados = 0,j;
+        int i=0 ;
+        char aux [strlen(text)+1];
+        strcpy(aux,text);
+        aux[0] = '_';
+        for (i=0; i<= strlen(text) ; i++ )
+        {
+            if(aux[i] == ' ')
+                aux[i]= '_';
+        }
+        aux[i-2]='\0';
+        for ( j=0 ;j< cantReg; j++)
+        {
+            if(strcmp(aux,tb[j].nombre)==0)
+            duplicados = 1;      
+        }
+        if(!duplicados){
+            strcpy(tb[cantReg].nombre,aux);
+            strcpy(tb[cantReg].valor,text);
+            strcpy(tb[cantReg].tipo,tipo);
+            tb[cantReg].longitud = strlen(text)-2;
+            cantReg++;
+        }
+   // printf("\nNombre : %s   -   Valor : %s -   longitud :    %d\n",tb[cantReg].nombre , tb[cantReg].valor,tb[cantReg].longitud);
+
+    
+}

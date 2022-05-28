@@ -12,6 +12,7 @@ ENDDEC
 WRITE "HOLA MUNDO"
 WRITE "CHAU MUNDO"
 
+var:=a
 
 -/ IF /-
 

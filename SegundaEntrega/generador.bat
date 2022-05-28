@@ -2,9 +2,9 @@ flex Lexico.l
 pause
 bison -dyv Sintactico.y
 pause
-gcc lex.yy.c y.tab.c -o Segunda.exe
+gcc lex.yy.c y.tab.c -o Primera.exe
 pause
-Segunda.exe prueba.txt
+Primera.exe prueba.txt
 pause
 del lex.yy.c
 del y.tab.c
