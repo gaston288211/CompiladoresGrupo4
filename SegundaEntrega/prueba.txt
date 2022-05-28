@@ -1,0 +1,26 @@
+-/ I+F /-
+DECVAR
+	a1, b1 : FLOAT 
+	variable1 : STRING
+	p1, p2, p3 : FLOAT
+	
+
+ENDDEC
+
+-/ IF /-
+
+WRITE "HOLA MUNDO"
+WRITE "CHAU MUNDO"
+
+
+-/ IF /-
+
+-/ 32769 /-
+
+-/ 214748364790 /-
+
+-/ 333333333333333333333333333333333333333333333333333333333333333333333333333333335 /-
+
+var := -32768
+
+-/ "holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAAholaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAA" /-
