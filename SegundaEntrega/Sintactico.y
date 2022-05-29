@@ -80,112 +80,172 @@ int cont=1;
 %token <strVal> CTE_INTEGER
 %token <strVal> CTE_FLOAT    
 %token <strVal> CTE_STRING
+%token <strVal> OP_SUMA
+%token <strVal> OP_RESTA
+%token <strVal> OP_ASIG
+%token <strVal> OP_DIV
+%token <strVal> OP_DIF
+%token <strVal> OP_MULT
 
 %%
 programa:
-    declaracion bloque          {printf("\nREGLA 1: <programa> --> <declaracion> <bloque>\n");} 
+    declaracion bloque          	{printf("\nREGLA 1: <programa> --> <declaracion> <bloque>\n");} 
+	
 bloque:
     sentencia                       {printf("\nREGLA 1: <bloque> --> <sentencia>\n");}       
-    | bloque sentencia            {printf("\nREGLA 2: <bloque> --> <bloque> <sentencia>\n");};              
+    |bloque sentencia            	{printf("\nREGLA 2: <bloque> --> <bloque> <sentencia>\n");};              
     
 sentencia:
-     asignacion                      {printf("\nREGLA 4: <sentencia> --> <asignacion>\n");}   
-    |ciclo                           {printf("\nREGLA 5: <sentencia> --> <ciclo>\n");}   
-    |seleccion                       {printf("\nREGLA 6: <sentencia> --> <seleccion>\n");}   
-    |salida                          {printf("\nREGLA 7: <sentencia> --> <salida>\n");}   
-    |entrada                         {printf("\nREGLA 8: <sentencia> --> <entrada>\n");};
-
-
+    asignacion                    	{printf("\nREGLA 4: <sentencia> --> <asignacion>\n");}   
+    |ciclo                          {printf("\nREGLA 5: <sentencia> --> <ciclo>\n");}   
+    |seleccion                      {printf("\nREGLA 6: <sentencia> --> <seleccion>\n");}   
+    |salida                         {printf("\nREGLA 7: <sentencia> --> <salida>\n");}   
+    |entrada                        {printf("\nREGLA 8: <sentencia> --> <entrada>\n");};
 
 declaracion:
     DECVAR listaDeclaraciones  ENDDEC    {printf("\nREGLA 11: <declaracion> --> DECVAR <listaDeclaraciones> ENDDEC\n");};    
+	
 listaDeclaraciones:
-    listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
+    listavar DP tipodato    					{printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
     |listaDeclaraciones listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listaDeclaraciones> <listavar> DP <tipodato> \n");};    
+--en las 2 reglas, cada vez que reconocemos el tipo de dato, vaciamos la pila existente hasta el momento, y escribimos la ts con el id y su tipo
+	
 listavar:
     ID                              {printf("\nREGLA 12: <listavar> --> ID \n");}
-    | listavar COMA ID              {printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");};
+    |listavar COMA ID              	{printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");};
+--en las 2 reglas, por cada ID que reconocemos, lo metemos a una pila.
 
 tipodato:
     INTEGER                         {printf("\nREGLA 14: <tipodato> --> INTEGER  \n");}
-    | FLOAT                         {printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
-    | STRING                        {printf("\nREGLA 16: <tipodato> --> STRING \n");};
+    |FLOAT                         	{printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
+    |STRING                        	{printf("\nREGLA 16: <tipodato> --> STRING \n");};
 
 seleccion:
-    IF condicion THEN bloque ELSE bloque ENDIF      {printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
-    | IF condicion THEN bloque ENDIF                  {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
+    IF condicion THEN bloque ELSE bloque ENDIF   	{printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
+    |IF condicion THEN bloque ENDIF                 {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
 
 ciclo:
-    WHILE ID IN COR_A lista COR_C DO bloque ENDWHILE         {printf("\nREGLA 19: <ciclo> --> WHILE ID IN COR_A <lista> COR_C DO <sentencia> ENDWHILE\n");};
+    WHILE ID IN COR_A lista COR_C DO bloque ENDWHILE	{printf("\nREGLA 19: <ciclo> --> WHILE ID IN COR_A <lista> COR_C DO <sentencia> ENDWHILE\n");};
 
 entrada:
-    READ ID                                          {printf("\nREGLA 20: <entrada> --> READ ID\n");};
+    READ ID             {
+							insertar_en_polaca(&listaPolaca,"READ",cont++);
+							insertar_en_polaca(&listaPolaca,$2,cont++);
+							printf("\nREGLA 20: <entrada> --> READ ID\n");
+						};
 
 salida:
-    WRITE CTE_STRING                                   {printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");};
+    WRITE CTE_STRING    {
+							insertar_en_polaca(&listaPolaca,"WRITE",cont++);
+							insertarString(&symbolTable, $2);
+							printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");
+						};
 
 asignacion:
-    ID OP_ASIG expresion                                {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");}
-    | ID OP_ASIG CTE_STRING                 {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");};
+    ID OP_ASIG expresion       		{
+										insertar_en_polaca(&listaPolaca,$1,cont++);
+										insertar_en_polaca(&listaPolaca,$2,cont++);
+										printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n")
+									;}
+    |ID OP_ASIG CTE_STRING          {	
+										insertar_en_polaca(&listaPolaca,$1,cont++);
+										insertar_en_polaca(&listaPolaca,$2,cont++);
+										insertarString(&symbolTable, $3);
+										printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");
+									};
 
 condicion:
-    comparacion                                         {printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
-    | condicion AND comparacion                         {printf("\nREGLA 24: <condicion> --> <comparacion> AND <comparacion>\n");}
-    | condicion OR comparacion                          {printf("\nREGLA 25: <condicion> --> <comparacion> OR <comparacion>\n");}
-    | PAR_A NOT condicion PAR_C AND comparacion         {printf("\nREGLA 26: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
-    | PAR_A  NOT condicion PAR_C OR comparacion         {printf("\nREGLA 27: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
-    | between                         {printf("\nREGLA 9: <condicion> --> <between>\n");}
-    |inlist                          {printf("\nREGLA 10: <condicion> --> <inlist>\n");};
+    comparacion                                       	{printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
+    |condicion AND comparacion                         	{
+															printf("\nREGLA 24: <condicion> --> <comparacion> AND <comparacion>\n");
+														}
+    |condicion OR comparacion                          	{
+															printf("\nREGLA 25: <condicion> --> <comparacion> OR <comparacion>\n");
+														}
+    |PAR_A NOT condicion PAR_C AND comparacion         	{printf("\nREGLA 26: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
+    |PAR_A NOT condicion PAR_C OR comparacion         	{printf("\nREGLA 27: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
+    |between                         					{printf("\nREGLA 9: <condicion> --> <between>\n");}
+    |inlist                          					{printf("\nREGLA 10: <condicion> --> <inlist>\n");};
 
 comparacion:
-    expresion comparador expresion                     {printf("\nREGLA 28: <comparacion> --> <expresion><comparador><expresion> \n");};
+    expresion comparador expresion                     	{	
+															printf("\nREGLA 28: <comparacion> --> <expresion><comparador><expresion> \n");
+														};
 
 expresion:
-    expresion OP_SUMA termino                           {printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");}
-    | expresion OP_RESTA termino                        {printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");}
-    | termino                                           {printf("\nREGLA 31: <expresion> --> <termino> \n");}
+    expresion OP_SUMA termino                         	{printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");}
+    |expresion OP_RESTA termino                        	{printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");}
+    |termino                                           	{printf("\nREGLA 31: <expresion> --> <termino> \n");}
     |OP_RESTA expresion %prec MENOS_UNARIO              {printf("\nREGLA 32: <expresion> --> OP_RESTA <expresion> \n");}                               ;
 
 termino:
-    termino OP_MULT factor                              {printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");}
-    | termino OP_DIV factor                             {printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");}
-    | factor                                            {printf("\nREGLA 35: <termino> --> <factor> \n");};
+    termino OP_MULT factor                             	{printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");}
+    |termino OP_DIV factor                             	{printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");}
+    |factor                                            	{printf("\nREGLA 35: <termino> --> <factor> \n");};
 
 lista:
     factor                                              {printf("\nREGLA 36: <lista> --> <factor> \n");}
-    | lista COMA factor                                 {printf("\nREGLA 37: <lista> --> <lista> COMA <factor> \n");};
+    |lista COMA factor                                 	{printf("\nREGLA 37: <lista> --> <lista> COMA <factor> \n");};
 
 factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 38: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     | CTE_FLOAT                 {
-                                    printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
-                                    //insertar_en_polaca(&listaPolaca,$1,cont++);
+                                    insertar_en_polaca(&listaPolaca,$1,cont++);
+									insertarNumero(&symbolTable,$1);
+									printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
                                 } 
     | ID                        {
-                                    
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
-                                    printf("\nREGLA 40: <factor> --> ID\n");
+                                    printf("\nREGLA 4000000000: <factor> --> ID\n");
                                     
                                 } 
-    | CTE_INTEGER                 {printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");};
+    | CTE_INTEGER               {
+									insertar_en_polaca(&listaPolaca,$1,cont++);
+									insertarNumero(&symbolTable,$1);
+									printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");
+								};
 
 comparador:
-    OP_MAY          {printf("\nREGLA 42: <comparador> --> <OP_MAY>\n");} 
-    | OP_MEN        {printf("\nREGLA 43: <comparador> --> <OP_MEN>\n");} 
-    | OP_MENIGU     {printf("\nREGLA 44: <bloque> --> <OP_MENIGU>\n");} 
-    | OP_MAYIGU     {printf("\nREGLA 45: <bloque> --> <OP_MAYIGU>\n");} 
-    | OP_IGUAL      {printf("\nREGLA 46: <bloque> --> <OP_IGUAL>\n");} 
-    | OP_DIF        {printf("\nREGLA 47: <bloque> --> <OP_DIF>\n");};
+    OP_MAY         	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BLE",cont++);
+						printf("\nREGLA 42: <comparador> --> <OP_MAY>\n");
+					} 
+    |OP_MEN        	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BGE",cont++);
+						printf("\nREGLA 43: <comparador> --> <OP_MEN>\n");
+					} 
+    |OP_MENIGU     	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BGT",cont++);
+						printf("\nREGLA 44: <bloque> --> <OP_MENIGU>\n");
+					} 
+    |OP_MAYIGU     	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BLT",cont++);
+						printf("\nREGLA 45: <bloque> --> <OP_MAYIGU>\n");
+					} 
+    |OP_IGUAL      	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BNE",cont++);
+						printf("\nREGLA 46: <bloque> --> <OP_IGUAL>\n");
+					} 
+    |OP_DIF        	{	
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BET",cont++);
+						printf("\nREGLA 47: <bloque> --> <OP_DIF>\n");
+					};
 
 between:
-    BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C	{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
+    BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C		{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
 
 lista_expr:
-    expresion                                              {printf("\nREGLA 49: <lista_expr> --> <expresion> \n");}
-    | lista_expr PYC expresion                             {printf("\nREGLA 50: <lista_expr> --> <lista_expr><PYC><expresion> \n");};
+    expresion                                             	{printf("\nREGLA 49: <lista_expr> --> <expresion> \n");}
+    |lista_expr PYC expresion                             	{printf("\nREGLA 50: <lista_expr> --> <lista_expr><PYC><expresion> \n");};
    
 inlist:
-    INLIST PAR_A ID PYC COR_A lista_expr COR_C PAR_C	{printf("\nREGLA 51: <inlist> --> <INLIST><PAR_A><ID><PYC><COR_A><lista_expr><COR_C><PAR_C>\n");}; 
+    INLIST PAR_A ID PYC COR_A lista_expr COR_C PAR_C		{printf("\nREGLA 51: <inlist> --> <INLIST><PAR_A><ID><PYC><COR_A><lista_expr><COR_C><PAR_C>\n");}; 
 
 
 %%
@@ -209,8 +269,9 @@ else
         yyparse();
     }
     escribirTablaSimbolos();
-    
+    crearLista(&symbolTable);
     vaciar_polaca(&listaPolaca);
+	escribirTabla(&symbolTable);
     fclose(fpTabla);
     fclose(yyin);
     return 1;
@@ -223,7 +284,7 @@ char* validarRangoString( char *text ){
     char * tipo ="CTE_STRING";
     if(strlen(text)>STR_LIMITE)
 {
-            printf("Eror String: %s - ",text);
+            printf("Error String: %s - ",text);
             return yyerror();
         }
 else{
@@ -236,7 +297,7 @@ else{
 char* validarRangoID( char *text ){
     if(strlen(text)>ID_LIMITE)
 {
-        printf("Eror ID: %s - ",text);
+        printf("Error ID: %s - ",text);
         return yyerror();
 }
 else{
@@ -254,7 +315,7 @@ printf("Valor del entero : %s\n",text+1 );
     {
         if( strlen( text+1 ) > ENT_LIMITE || atoi(text) < COTA_INFERIOR_ENT )
         {
-           printf("Eror constante entera fuera del limite: %s - ",text);
+           printf("Error constante entera fuera del limite: %s - ",text);
             return yyerror();
         }
 
@@ -263,7 +324,7 @@ printf("Valor del entero : %s\n",text+1 );
     {
         if( strlen( text ) > ENT_LIMITE || atoi(text)> COTA_SUPERIOR_ENT )
         {
-             printf("Eror constante entera fuera del limite: %s - ",text);
+             printf("Error constante entera fuera del limite: %s - ",text);
             return yyerror();
         }
    
@@ -277,7 +338,7 @@ char* validarRangoReal( char *text ){
     char * tipo ="CTE_FLOAT";
     if(atof(text) > COTA_SUPERIOR_REAL|| atof(text) <  COTA_INFERIOR_REAL) 
         {
-            printf("Eror Real: %s - ",text);
+            printf("Error Real: %s - ",text);
             return yyerror();
         }
         else{
