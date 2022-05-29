@@ -81,13 +81,13 @@ OP_RESTA                [-]
 {WRITE}          {printf("\nWRITE: %s\n",yytext);return WRITE;}
 {WHILE}          {printf("\nWHILE: %s\n",yytext);return WHILE;}
 {IF}             {printf("\nIF: %s\n",yytext);return IF;}
-{INTEGER}        {printf("\nINTEGER: %s\n",yytext);return INTEGER;}
-{FLOAT}          {printf("\nFLOAT: %s\n",yytext);return FLOAT;}
+{INTEGER}        {yylval.strVal = strdup(yytext);printf("\nINTEGER: %s\n",yytext);return INTEGER;}
+{FLOAT}          {yylval.strVal = strdup(yytext);printf("\nFLOAT: %s\n",yytext);return FLOAT;}
 {ELSE}           {printf("\nELSE: %s\n",yytext);return ELSE;}
 {DO}             {printf("\nDO: %s\n",yytext);return DO;}
 {ENDWHILE}       {printf("\nENDWHILE: %s\n",yytext);return ENDWHILE;}
 {IN}             {printf("\nIN: %s\n",yytext);return IN;}
-{STRING}         {printf("\nSTRING: %s\n",yytext);return STRING;}   
+{STRING}         {yylval.strVal = strdup(yytext);printf("\nSTRING: %s\n",yytext);return STRING;}   
 {THEN}           {printf("\nTHEN: %s\n",yytext);return THEN;} 
 {ENDIF}          {printf("\nENDIF: %s\n",yytext);return ENDIF;} 
 {BETWEEN}        {printf("\nBETWEEN: %s\n",yytext);return BETWEEN;} 
@@ -99,9 +99,9 @@ OP_RESTA                [-]
 
 
 
-{CTE_INTEGER}     {printf("\nConstante Entero: %s\n",validarRangoEntero(yytext));return CTE_INTEGER;}
-{CTE_STRING}     {printf("\nConstante String: %s\n",validarRangoString(yytext));return CTE_STRING;}
-{CTE_FLOAT}    {printf("\nConstante Real: %s\n",validarRangoReal(yytext));return CTE_FLOAT;} 
+{CTE_INTEGER}     {yylval.strVal = strdup(yytext);printf("\nConstante Entero: %s\n",validarRangoEntero(yytext));return CTE_INTEGER;}
+{CTE_STRING}     {yylval.strVal = strdup(yytext);printf("\nConstante String: %s\n",validarRangoString(yytext));return CTE_STRING;}
+{CTE_FLOAT}    {yylval.strVal = strdup(yytext);printf("\nConstante Real: %s\n",validarRangoReal(yytext));return CTE_FLOAT;} 
 
 {ID}               {yylval.strVal = strdup(yytext);printf("\nID Variable: %s\n",validarRangoID(yytext));return ID;}
 {COMA}             {printf("\nComa: %s\n",yytext);return COMA;}
@@ -119,18 +119,18 @@ OP_RESTA                [-]
 {COR_A}          {printf("\nCorchete Abre: %s\n",yytext);return COR_A;}
 {COR_C}          {printf("\nCorchete Cierra: %s\n",yytext);return COR_C;}
 
-{OP_ASIG}	 {printf("\nOperador Asignacion: %s\n",yytext);return OP_ASIG;}
-{OP_MAY}	 {printf("\nOperador Mayor: %s\n",yytext);return OP_MAY;}
-{OP_MAYIGU}      {printf("\nOperador Mayor o igual: %s\n",yytext);return OP_MAYIGU;}
-{OP_MEN}         {printf("\nOperador Menor: %s\n",yytext);return OP_MEN;}
-{OP_MENIGU}      {printf("\nOperador Menor o Igual: %s\n",yytext);return OP_MENIGU;}
-{OP_IGUAL}       {printf("\nOperador Igual: %s\n",yytext);return OP_IGUAL;}
-{OP_DIF}         {printf("\nOperador Distinto : %s\n",yytext);return OP_DIF;}
-{OP_DIV}         {printf("\nOperador Division: %s\n",yytext);return OP_DIV;}
-{OP_SUMA}        {printf("\nOperador Suma: %s\n",yytext);return OP_SUMA;}
-{OP_MULT}        {printf("\nOperador Multiplicacion: %s\n",yytext);return OP_MULT;} 
-{OP_ASIG}        {printf("\nOperador Asignacion: %s\n",yytext);return OP_ASIG;} 
-{OP_RESTA}       {printf("\nOperador Resta: %s\n",yytext);return OP_RESTA;}
+{OP_ASIG}	 {yylval.strVal = strdup(yytext);printf("\nOperador Asignacion: %s\n",yytext);return OP_ASIG;}
+{OP_MAY}	 {yylval.strVal = strdup(yytext);printf("\nOperador Mayor: %s\n",yytext);return OP_MAY;}
+{OP_MAYIGU}      {yylval.strVal = strdup(yytext);printf("\nOperador Mayor o igual: %s\n",yytext);return OP_MAYIGU;}
+{OP_MEN}         {yylval.strVal = strdup(yytext);printf("\nOperador Menor: %s\n",yytext);return OP_MEN;}
+{OP_MENIGU}      {yylval.strVal = strdup(yytext);printf("\nOperador Menor o Igual: %s\n",yytext);return OP_MENIGU;}
+{OP_IGUAL}       {yylval.strVal = strdup(yytext);printf("\nOperador Igual: %s\n",yytext);return OP_IGUAL;}
+{OP_DIF}         {yylval.strVal = strdup(yytext);printf("\nOperador Distinto : %s\n",yytext);return OP_DIF;}
+{OP_DIV}         {yylval.strVal = strdup(yytext);printf("\nOperador Division: %s\n",yytext);return OP_DIV;}
+{OP_SUMA}        {yylval.strVal = strdup(yytext);printf("\nOperador Suma: %s\n",yytext);return OP_SUMA;}
+{OP_MULT}        {yylval.strVal = strdup(yytext);printf("\nOperador Multiplicacion: %s\n",yytext);return OP_MULT;} 
+{OP_ASIG}        {yylval.strVal = strdup(yytext);printf("\nOperador Asignacion: %s\n",yytext);return OP_ASIG;} 
+{OP_RESTA}       {yylval.strVal = strdup(yytext);printf("\nOperador Resta: %s\n",yytext);return OP_RESTA;}
 
 
 "\n"  

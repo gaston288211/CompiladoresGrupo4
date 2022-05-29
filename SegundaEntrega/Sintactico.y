@@ -44,6 +44,7 @@ extern int yylex();
 extern char * yyerror();
 
 
+void cargarTipoDato(tStack* pilaTipoVariables, tStack* pilaVariables);
 char* validarRangoString( char *text );
 char* validarRangoEntero( char *text );
 char* validarRangoID( char *text );
@@ -57,7 +58,8 @@ int abrirTablaDeSimbolos();
 /// segunda entrega
 t_lista listaPolaca;
 tStack pilaNumCelda;
-
+tStack pilaVariables;
+tStack pilaTipoVariables;
 int cont=1;
 
 
@@ -72,8 +74,26 @@ int cont=1;
 %left OP_MULT OP_DIV
 %right MENOS_UNARIO
 
-%token OP_MAY OP_MAYIGU OP_MEN OP_MENIGU OP_IGUAL OP_DIF
-%token WHILE IF INTEGER FLOAT STRING ELSE THEN DECVAR ENDDEC IN AND OR NOT LONG BETWEEN INLIST
+%token <strVal> OP_ASIG
+%token <strVal> OP_SUMA
+%token <strVal>  OP_RESTA
+%token <strVal> OP_DIV
+%token <strVal> OP_MULT
+%token  OP_MAY 
+%token  OP_MAYIGU 
+%token  OP_MEN 
+%token  OP_MENIGU
+%token  OP_IGUAL
+%token  OP_DIF
+%token WHILE IF 
+%token <strVal> INTEGER 
+%token <strVal> FLOAT 
+%token <strVal> STRING 
+%token ELSE THEN DECVAR ENDDEC IN 
+%token <strVal> AND
+%token <strVal> OR
+%token <strVal> NOT 
+%token LONG BETWEEN INLIST
 %token WRITE COMA ENDIF ENDWHILE DO READ PAR_A PAR_C COR_A COR_C PYC DP
 
 %token <strVal> ID
@@ -98,18 +118,40 @@ sentencia:
 
 
 declaracion:
-    DECVAR listaDeclaraciones  ENDDEC    {printf("\nREGLA 11: <declaracion> --> DECVAR <listaDeclaraciones> ENDDEC\n");};    
+    DECVAR listaDeclaraciones  ENDDEC   {  
+                                            
+                                            printf("\nREGLA 11: <declaracion> --> DECVAR <listaDeclaraciones> ENDDEC\n");
+                                        };    
 listaDeclaraciones:
-    listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
-    |listaDeclaraciones listavar DP tipodato    {printf("\nREGLA 11: <listaDeclaraciones> --> <listaDeclaraciones> <listavar> DP <tipodato> \n");};    
+    listavar DP tipodato                        {
+                                                    cargarTipoDato(&pilaTipoVariables,&pilaVariables);
+                                                    printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
+    |listaDeclaraciones listavar DP tipodato    {
+                                                    cargarTipoDato(&pilaTipoVariables,&pilaVariables);
+                                                    printf("\nREGLA 11: <listaDeclaraciones> --> <listaDeclaraciones> <listavar> DP <tipodato> \n");
+                                                };    
 listavar:
-    ID                              {printf("\nREGLA 12: <listavar> --> ID \n");}
-    | listavar COMA ID              {printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");};
+    ID                              {
+                                        pushStack(&pilaVariables,$1);
+                                        printf("\nREGLA 12: <listavar> --> ID \n");
+                                    }
+    | listavar COMA ID              {
+                                        pushStack(&pilaVariables,$3);
+                                        printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");
+                                    };
 
 tipodato:
-    INTEGER                         {printf("\nREGLA 14: <tipodato> --> INTEGER  \n");}
-    | FLOAT                         {printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
-    | STRING                        {printf("\nREGLA 16: <tipodato> --> STRING \n");};
+    INTEGER                         {
+                                        pushStack(&pilaTipoVariables,$1);
+                                        printf("\nREGLA 14: <tipodato> --> INTEGER  \n");
+                                    }
+    | FLOAT                         {
+                                        pushStack(&pilaTipoVariables,$1);
+                                        printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
+    | STRING                        {
+                                        pushStack(&pilaTipoVariables,$1);
+                                        printf("\nREGLA 16: <tipodato> --> STRING \n");
+                                    };
 
 seleccion:
     IF condicion THEN bloque ELSE bloque ENDIF      {printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
@@ -125,8 +167,17 @@ salida:
     WRITE CTE_STRING                                   {printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");};
 
 asignacion:
-    ID OP_ASIG expresion                                {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");}
-    | ID OP_ASIG CTE_STRING                 {printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");};
+    ID OP_ASIG expresion                                {
+                                                             insertar_en_polaca(&listaPolaca,$1,cont++);
+                                                             insertar_en_polaca(&listaPolaca,$2,cont++);
+                                                             printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");
+                                                        }
+    | ID OP_ASIG CTE_STRING                             {
+                                                             insertar_en_polaca(&listaPolaca,$1,cont++);                  insertar_en_polaca(&listaPolaca,$1,cont++);
+                                                             insertar_en_polaca(&listaPolaca,$3,cont++);
+                                                             insertar_en_polaca(&listaPolaca,$2,cont++);
+                                                             printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");
+                                                        };
 
 condicion:
     comparacion                                         {printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
@@ -141,15 +192,29 @@ comparacion:
     expresion comparador expresion                     {printf("\nREGLA 28: <comparacion> --> <expresion><comparador><expresion> \n");};
 
 expresion:
-    expresion OP_SUMA termino                           {printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");}
-    | expresion OP_RESTA termino                        {printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");}
+    expresion OP_SUMA termino                           {   
+                                                            insertar_en_polaca(&listaPolaca,$2,cont++);
+                                                            printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");
+                                                        }
+    | expresion OP_RESTA termino                        {
+                                                             insertar_en_polaca(&listaPolaca,$2,cont++);
+                                                             printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");
+                                                        }
     | termino                                           {printf("\nREGLA 31: <expresion> --> <termino> \n");}
     |OP_RESTA expresion %prec MENOS_UNARIO              {printf("\nREGLA 32: <expresion> --> OP_RESTA <expresion> \n");}                               ;
 
 termino:
-    termino OP_MULT factor                              {printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");}
-    | termino OP_DIV factor                             {printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");}
-    | factor                                            {printf("\nREGLA 35: <termino> --> <factor> \n");};
+    termino OP_MULT factor          {
+                                        insertar_en_polaca(&listaPolaca,$2,cont++);
+                                        printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");
+                                    }
+    | termino OP_DIV factor         {
+                                        insertar_en_polaca(&listaPolaca,$2,cont++);
+                                        printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");
+                                    }
+    | factor                       {
+                                        printf("\nREGLA 35: <termino> --> <factor> \n");
+                                   };
 
 lista:
     factor                                              {printf("\nREGLA 36: <lista> --> <factor> \n");}
@@ -158,16 +223,18 @@ lista:
 factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 38: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     | CTE_FLOAT                 {
+                                    insertar_en_polaca(&listaPolaca,$1,cont++);
                                     printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
-                                    //insertar_en_polaca(&listaPolaca,$1,cont++);
                                 } 
-    | ID                        {
-                                    
+    | ID                        {   
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
                                     printf("\nREGLA 40: <factor> --> ID\n");
                                     
                                 } 
-    | CTE_INTEGER                 {printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");};
+    | CTE_INTEGER               {
+                                    insertar_en_polaca(&listaPolaca,$1,cont++);
+                                    printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");
+                                };
 
 comparador:
     OP_MAY          {printf("\nREGLA 42: <comparador> --> <OP_MAY>\n");} 
@@ -199,6 +266,8 @@ int main(int argc,char *argv[])
     
     createListaPolaca(&listaPolaca);
     createStack(&pilaNumCelda);
+    createStack(&pilaVariables);
+    createStack(&pilaTipoVariables);
 
 if ((yyin = fopen(argv[1], "rt")) == NULL)
     {
@@ -363,8 +432,6 @@ void cargarVecTablaID(char * text)
         aux[tamanio+1]='\0';
         strcpy(tb[cantReg].nombre,aux);
         strcpy(tb[cantReg].valor,"-\0");
-        tb[cantReg].tipo[0] ='-';
-        tb[cantReg].tipo[1] ='\0'; 
         tb[cantReg].longitud = 0;
         //printf("\nNombre : %s   -   Valor : %s -   longitud :    %d\n",tb[cantReg].nombre,tb[cantReg].valor,tb[cantReg].longitud);
         cantReg++;
@@ -402,4 +469,24 @@ void cargarVecTablaString(char * text, char* tipo)
    // printf("\nNombre : %s   -   Valor : %s -   longitud :    %d\n",tb[cantReg].nombre , tb[cantReg].valor,tb[cantReg].longitud);
 
     
+}
+void cargarTipoDato(tStack* pilaTipoVariables, tStack* pilaVariables)
+{
+        int j;
+    char * variableaux;
+    char * tipo;
+    if (emptyStack(pilaTipoVariables))
+        popStack(pilaTipoVariables,tipo);
+    while(emptyStack(pilaVariables))
+    {
+        popStack(pilaVariables, variableaux);
+        for ( j=0 ;j< cantReg; j++)
+        {
+            if(strcmp(variableaux,tb[j].nombre)==0)
+            {
+                strcpy(tb[j].tipo,tipo);
+            }
+             strcpy(tb[j].tipo,"testt");
+        }
+    }
 }
