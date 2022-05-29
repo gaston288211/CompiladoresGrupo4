@@ -69,6 +69,8 @@ int cont=1;
 
 char labelBodyWhile[20];
 char labelWhile[20];
+char labelIF[20];
+char auxBetween [100];
 %}
 %union{
     char* strVal;
@@ -140,7 +142,7 @@ listavar:
                                         pushStack(&pilaVariables,$1);
                                         printf("\nREGLA 12: <listavar> --> ID \n");
                                     }
-    | listavar COMA ID              {
+    |listavar COMA ID               {
                                         pushStack(&pilaVariables,$3);
                                         printf("\nREGLA 13: <listavar> --> <listavar> COMA ID\n");
                                     };
@@ -150,10 +152,10 @@ tipodato:
                                         pushStack(&pilaTipoVariables,$1);
                                         printf("\nREGLA 14: <tipodato> --> INTEGER  \n");
                                     }
-    | FLOAT                         {
+    |FLOAT                          {
                                         pushStack(&pilaTipoVariables,$1);
                                         printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
-    | STRING                        {
+    |STRING                         {
                                         pushStack(&pilaTipoVariables,$1);
                                         printf("\nREGLA 16: <tipodato> --> STRING \n");
                                     };
@@ -162,41 +164,48 @@ seleccion:
     IF condicion THEN bloque ELSE bloque ENDIF   	{printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
     |IF condicion THEN bloque ENDIF                 {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
 
-ciclo:  WHILE   {
-                  char numCell[10];
-                  char labelInitWhile[20];
-                  itoa(cont, numCell, 10);
-                  strcpy(labelInitWhile, "ET_WHILE_");
-                  strcat(labelInitWhile, numCell);
-                  strcpy(labelWhile, labelInitWhile);
-                  insertar_en_polaca(&listaPolaca, labelInitWhile, cont++);
-                }
-        condicion DO 
-        bloque  {
-                    insertar_en_polaca(&listaPolaca,"BI",cont++);
-                    insertar_en_polaca(&listaPolaca,labelWhile,cont++);
-                }
-        ENDWHILE {
-                    int numCell;
-                    char label[20];
-                    while(!emptyStack(&pilaNumCelda)){
-                      popStack2(&pilaNumCelda, label, &numCell);
-                      printf("%s",label);
-                      int cmp =  strcmpi(label, "LABELFALSE");
-                      if (cmp==0) {
-                        char NumBiOutOfTheWhile[20];
-                        char labelBi[20];
-                        strcpy(labelBi,"ET_END_WHILE");
-                        itoa(cont, NumBiOutOfTheWhile, 10);
-                        strcat(labelBi, NumBiOutOfTheWhile);
-                        rellenarPolaca2(&listaPolaca, numCell, labelBi);
-                        
-                      } else 
-                        {
-                            int cmp =  strcmpi(label, "LABELTRUE");
-                            //VER SI ES NECESARIO
-                        }
-                    }
+
+//IF condicion THEN bloque ELSE bloque ENDIF   	{printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
+//|IF condicion THEN bloque ENDIF                 {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
+
+
+//labelIF
+ciclo:  
+	WHILE   {
+			  char numCell[10];
+			  char labelInitWhile[20];
+			  itoa(cont, numCell, 10);
+			  strcpy(labelInitWhile, "ET_WHILE_");
+			  strcat(labelInitWhile, numCell);
+			  strcpy(labelWhile, labelInitWhile);
+			  insertar_en_polaca(&listaPolaca, labelInitWhile, cont++);
+			}
+	condicion DO 
+	bloque  {
+				insertar_en_polaca(&listaPolaca,"BI",cont++);
+				insertar_en_polaca(&listaPolaca,labelWhile,cont++);
+			}
+	ENDWHILE {
+				int numCell;
+				char label[20];
+				while(!emptyStack(&pilaNumCelda)){
+				  popStack2(&pilaNumCelda, label, &numCell);
+				  printf("%s",label);
+				  int cmp =  strcmpi(label, "LABELFALSE");
+				  if (cmp==0) {
+					char NumBiOutOfTheWhile[20];
+					char labelBi[20];
+					strcpy(labelBi,"ET_END_WHILE");
+					itoa(cont, NumBiOutOfTheWhile, 10);
+					strcat(labelBi, NumBiOutOfTheWhile);
+					rellenarPolaca2(&listaPolaca, numCell, labelBi);
+					
+				  } else 
+					{
+						int cmp =  strcmpi(label, "LABELTRUE");
+						//VER SI ES NECESARIO
+					}
+				}
             };
       /*  WHILE      	{ char numCell[10];
                   char labelInitWhile[20];
@@ -243,17 +252,16 @@ ciclo:  WHILE   {
               ;*/
 
 entrada:
-    READ ID             {
-							insertar_en_polaca(&listaPolaca,"READ",cont++);
-							insertar_en_polaca(&listaPolaca,$2,cont++);
-							printf("\nREGLA 20: <entrada> --> READ ID\n");
-						};
+    READ ID {
+				insertar_en_polaca(&listaPolaca,"READ",cont++);
+				insertar_en_polaca(&listaPolaca,$2,cont++);
+				printf("\nREGLA 20: <entrada> --> READ ID\n");
+			};
 
 salida:
     WRITE CTE_STRING    {
 							insertar_en_polaca(&listaPolaca,$2,cont++);
                             insertar_en_polaca(&listaPolaca,"WRITE",cont++);
-
 							insertarString(&symbolTable, $2);
 							printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");
 						};
@@ -264,7 +272,7 @@ asignacion:
                                                              insertar_en_polaca(&listaPolaca,$2,cont++);
                                                              printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");
                                                         }
-    | ID OP_ASIG CTE_STRING                             {
+    |ID OP_ASIG CTE_STRING                              {
                                                              insertar_en_polaca(&listaPolaca,$3,cont++);
                                                              insertar_en_polaca(&listaPolaca,$1,cont++);                  
                                                              insertar_en_polaca(&listaPolaca,$2,cont++);
@@ -272,18 +280,16 @@ asignacion:
                                                              printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");
                                                         };
 
-
 condicion:
     comparacion                                       	{printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
     |condicion 
-        AND 
-        comparacion                         	        {   //queda igual porque si una es neg salta
+     AND comparacion                         	        {   //queda igual porque si una es neg salta
 															printf("\nREGLA 24: <condicion> --> <comparacion> AND <comparacion>\n");
 														}
-    |PAR_A NOT                              {   //meto en la pila el not, y cuando leo las condiciones inserto el neg
-                                            pushStack(&pilaCondiciones,$2);
-                                        }
-        comparacion PAR_C
+    |PAR_A NOT      {   //meto en la pila el not, y cuando leo las condiciones inserto el neg
+						pushStack(&pilaCondiciones,$2);
+					}
+    comparacion PAR_C
     
     |condicion                              {//SI es neg deberia preguntar por la segunda
                                             int numCell;
@@ -434,6 +440,7 @@ comparacion:
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_DIF <expresion> \n");
 					};
+					
 expresion:
     expresion OP_SUMA termino                           {   
                                                             insertar_en_polaca(&listaPolaca,$2,cont++);
@@ -444,35 +451,35 @@ expresion:
                                                              printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");
                                                         }
     | termino                                           {printf("\nREGLA 31: <expresion> --> <termino> \n");}
-    |OP_RESTA expresion %prec MENOS_UNARIO              {printf("\nREGLA 32: <expresion> --> OP_RESTA <expresion> \n");}                               ;
+    |OP_RESTA expresion %prec MENOS_UNARIO              {printf("\nREGLA 32: <expresion> --> OP_RESTA <expresion> \n");};
 
 termino:
     termino OP_MULT factor          {
-                                        insertar_en_polaca(&listaPolaca,$2,cont++);
-                                        printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");
+										insertar_en_polaca(&listaPolaca,$2,cont++);
+										printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");
                                     }
-    | termino OP_DIV factor         {
-                                        insertar_en_polaca(&listaPolaca,$2,cont++);
-                                        printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");
+    |termino OP_DIV factor          {
+										insertar_en_polaca(&listaPolaca,$2,cont++);
+										printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");
                                     }
-    | factor                       {
-                                        printf("\nREGLA 35: <termino> --> <factor> \n");
-                                   };
+    |factor                         {
+										printf("\nREGLA 35: <termino> --> <factor> \n");
+                                    };
 
 
 factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 38: <factor> --> PAR_A<expresion><PAR_C>\n");} 
-    | CTE_FLOAT                 {
+    |CTE_FLOAT                  {
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
                                     insertarNumero(&symbolTable,$1);
                                     printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
                                 } 
-    | ID                        {   
+    |ID                         {   
 									insertar_en_polaca(&listaPolaca,$1,cont++);
 									printf("\nREGLA 39: <factor> --> ID\n");
                                 } 
 
-    | CTE_INTEGER               {
+    |CTE_INTEGER                {
 
 									insertar_en_polaca(&listaPolaca,$1,cont++);
 									insertarNumero(&symbolTable,$1);
@@ -481,14 +488,56 @@ factor:
 
 
 between:
-    BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C		{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
+    BETWEEN PAR_A ID	{	
+							strcpy(auxBetween,$3);
+							insertar_en_polaca(&listaPolaca,$3,cont++);
+						}
+	COMA COR_A expresion PYC	{
+									insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BLT",cont++);
+									
+									pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+									insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+									
+									
+									insertar_en_polaca(&listaPolaca,auxBetween,cont++);
+								}
+
+	expresion COR_C				{
+									insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BGT",cont++);
+									
+									pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+									insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+								}
+	PAR_C						{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}
+	//BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C		{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
+//cuando leo id, lo escribo. Cuando leo PYC (ya escribió la exp) escribo el CMP BLT. Cuando leo COR_C (ya escribí la exp) escribo CMP BGT. Seguido escribo VERDADERO o FALSO.
+
 
 lista_expr:
-    expresion                                             	{printf("\nREGLA 49: <lista_expr> --> <expresion> \n");}
-    |lista_expr PYC expresion                             	{printf("\nREGLA 50: <lista_expr> --> <lista_expr><PYC><expresion> \n");};
+    expresion                                             	{
+																insertar_en_polaca(&listaPolaca,auxInlist,cont++);
+																insertar_en_polaca(&listaPolaca,"CMP",cont++);
+																insertar_en_polaca(&listaPolaca,"BNE",cont++);
+																printf("\nREGLA 49: <lista_expr> --> <expresion> \n");
+															}
+    |lista_expr PYC expresion                             	{	
+																insertar_en_polaca(&listaPolaca,auxInlist,cont++);
+																insertar_en_polaca(&listaPolaca,"CMP",cont++);
+																insertar_en_polaca(&listaPolaca,"BNE",cont++);
+																printf("\nREGLA 50: <lista_expr> --> <lista_expr><PYC><expresion> \n");
+															};
    
 inlist:
-    INLIST PAR_A ID PYC COR_A lista_expr COR_C PAR_C		{printf("\nREGLA 51: <inlist> --> <INLIST><PAR_A><ID><PYC><COR_A><lista_expr><COR_C><PAR_C>\n");}; 
+    INLIST PAR_A ID {	
+							strcpy(auxInlist,$3);
+							//insertar_en_polaca(&listaPolaca,$3,cont++);
+						}
+	PYC COR_A lista_expr COR_C PAR_C		{
+												printf("\nREGLA 51: <inlist> --> <INLIST><PAR_A><ID><PYC><COR_A><lista_expr><COR_C><PAR_C>\n");
+											}; 
+//cuando leo ID, lo escribo. Cuando termino de leer cada expresión, escribo el salto por igual (eso en la de regla de arriba).
 
 
 %%
