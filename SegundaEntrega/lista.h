@@ -14,21 +14,21 @@ typedef struct sNode
 
 typedef tNode* tList;
 
-void createList(tList *p);
-int insertOrder(tList *p, char* name, char* dataType, char* value, int length);
-int insertVariable(tList *p, char* name, char* dataType); 
-int insertString(tList *p, char* name);
-int insertNumber(tList *p, char* lex);
-void deleteTable(tList *p);
-char* deleteCharacter(char* lex);
+void crearLista(tList *p);
+int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int length);
+int insertarVariable(tList *p, char* name, char* dataType); 
+int insertarString(tList *p, char* name);
+int insertarNumero(tList *p, char* lex);
+void escribirTabla(tList *p);
+char* formatoString(char* lex);
 
 
-void createList(tList *p)
+void crearLista(tList *p)
 {
     *p = NULL;
 }
 
-int insertOrder(tList *p, char* name, char* dataType, char* value, int length)
+int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int length)
 {
     int result = -1;
     tNode* nue = (tNode*)malloc(sizeof(tNode));
@@ -54,7 +54,7 @@ int insertOrder(tList *p, char* name, char* dataType, char* value, int length)
     return SUCCESS;
 }
 
-int insertNumber(tList *p, char* lex) 
+int insertarNumero(tList *p, char* lex) 
 {
     int result = -1;
     char name[100];
@@ -62,7 +62,7 @@ int insertNumber(tList *p, char* lex)
     strcpy(name, "_");
     strcat(name, lex); 
 
-    result = insertOrder(p, name, " ", lex, 0);
+    result = insertarEnOrden(p, name, " ", lex, 0);
 
     if(result == DUPLICATE){
         //printf("Lexema %s ya se ingreso en la tabla de simbolos\n",lex);
@@ -72,17 +72,17 @@ int insertNumber(tList *p, char* lex)
     return SUCCESS;
 }
 
-int insertString(tList *p, char* lex)
+int insertarString(tList *p, char* lex)
 {
     int result = -1;
     char name[100];
 
-    char* newName = deleteCharacter(lex);
+    char* newName = formatoString(lex);
 
     strcpy(name, "_");
     strcat(name, newName);
 
-    result = insertOrder(p, name, " ", newName, strlen(newName));
+    result = insertarEnOrden(p, name, " ", newName, strlen(newName));
 
     if(result == DUPLICATE){
         // printf("Lexema %s ya se ingreso en la tabla de simbolos\n",lex);
@@ -92,7 +92,7 @@ int insertString(tList *p, char* lex)
     return SUCCESS;
 }
 
-char* deleteCharacter(char* lex)
+char* formatoString(char* lex)
 {
     char* cad = lex;
     char* cadIni = cad;
@@ -109,11 +109,11 @@ char* deleteCharacter(char* lex)
     return cadIni;
 }
 
-int insertVariable(tList *p, char* lex, char* dataType)
+int insertarVariable(tList *p, char* lex, char* dataType)
 {
     int result = -1;
 
-    result = insertOrder(p, lex, dataType, " ", 0);
+    result = insertarEnOrden(p, lex, dataType, " ", 0);
     if(result == DUPLICATE){
         //printf("Lexema %s ya se ingreso en la tabla de simbolos\n",lex);
         return DUPLICATE;
@@ -122,7 +122,7 @@ int insertVariable(tList *p, char* lex, char* dataType)
     return SUCCESS;
 }
 
-void deleteTable(tList *p)
+void escribirTabla(tList *p)
 {
     FILE *pTable = fopen("ts.txt", "w+");
     if(!pTable) {

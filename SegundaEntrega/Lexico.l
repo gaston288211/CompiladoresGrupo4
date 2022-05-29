@@ -16,8 +16,8 @@ char *  yyerror();
 
 
 
-DIGITO		        ([0-9])
-LETRA			[a-zA-Z]
+DIGITO		       		([0-9])
+LETRA					[a-zA-Z]
 COMENTARIO_ABRE         "-/"
 COMENTARIO_CIERRA        "/-"
 CARACTERES              \?|\"|\.|\,|\+|\t|\n|\/|\_|\:|\;|¿|\*|{LETRA}|{DIGITO}|" "|=|\*|>|<|- 
@@ -54,23 +54,23 @@ THEN                    "THEN"
 INLIST                  "INLIST"
 
 
-CTE_FLOAT              {DIGITO}+"."{DIGITO}+|"."{DIGITO}|{DIGITO}+"."
-CTE_STRING               \".*\" 
+CTE_FLOAT              	{DIGITO}+"."{DIGITO}+|"."{DIGITO}|{DIGITO}+"."
+CTE_STRING              \".*\" 
 CTE_INTEGER	            "-"?{DIGITO}+
 
 COMENTARIO              {COMENTARIO_ABRE}([^-/])*?{COMENTARIO_CIERRA}
 ID		            	{LETRA}({LETRA}|{DIGITO})*
 
-OP_MAY		        [>]
-OP_MAYIGU	        ">="
-OP_MEN		        [<]
-OP_MENIGU	        "<="
-OP_IGUAL	        "=="
-OP_DIF		        "!="
+OP_MAY		        	[>]
+OP_MAYIGU	        	">="
+OP_MEN		       		[<]
+OP_MENIGU	       		"<="
+OP_IGUAL	       		"=="
+OP_DIF		       		"!="
 OP_DIV                  [/]
 OP_SUMA                 [+]
-OP_MULT		        [*]
-OP_ASIG		        ":="
+OP_MULT		        	[*]
+OP_ASIG		        	":="
 OP_RESTA                [-]
 
 %%
@@ -141,13 +141,13 @@ OP_RESTA                [-]
 " "      
             
 .               {
-							char msg[300];
-							printf("ERROR Lexico - Caracter \'%s\' invalido", yytext);
-							yyerror(msg);
-						}
+					char msg[300];
+					printf("ERROR Lexico - Caracter \'%s\' invalido", yytext);
+					yyerror(msg);
+				}
 
 %%
- char* yyerror(void){
-     printf("Error Lexico en linea %s %d \n",yytext ,yylineno) ;
-     exit(1);
- }
+char* yyerror(void){
+    printf("Error Lexico en linea %s %d \n",yytext ,yylineno) ;
+    exit(1);
+}
