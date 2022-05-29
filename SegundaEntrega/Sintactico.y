@@ -18,6 +18,9 @@
 #define COTA_SUPERIOR_REAL 3.4028235E+38
 #define COTA_INFERIOR_REAL -3.4028235E+38
 
+#define LABELTRUE   "LABELTRUE"
+#define LABELFALSE  "LABELFALSE"
+
 int yystopparser=0;
 //FILE  *yyin;
 //int yylex();
@@ -65,7 +68,6 @@ int cont=1;
 
 char labelBodyWhile[20];
 char labelWhile[20];
-
 %}
 %union{
     char* strVal;
@@ -159,8 +161,43 @@ seleccion:
     IF condicion THEN bloque ELSE bloque ENDIF   	{printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");}
     |IF condicion THEN bloque ENDIF                 {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
 
-ciclo:
-    WHILE      	{ char numCell[10];
+ciclo:  WHILE   {
+                  char numCell[10];
+                  char labelInitWhile[20];
+                  itoa(cont, numCell, 10);
+                  strcpy(labelInitWhile, "ET_WHILE_");
+                  strcat(labelInitWhile, numCell);
+                  strcpy(labelWhile, labelInitWhile);
+                  insertar_en_polaca(&listaPolaca, labelInitWhile, cont++);
+                }
+        condicion DO 
+        bloque  {
+                    insertar_en_polaca(&listaPolaca,"BI",cont++);
+                    insertar_en_polaca(&listaPolaca,labelWhile,cont++);
+                }
+        ENDWHILE {
+                    int numCell;
+                    char label[20];
+                    while(!emptyStack(&pilaNumCelda)){
+                      popStack2(&pilaNumCelda, label, &numCell);
+                      printf("%s",label);
+                      int cmp =  strcmpi(label, "LABELFALSE");
+                      if (cmp==0) {
+                        char NumBiOutOfTheWhile[20];
+                        char labelBi[20];
+                        strcpy(labelBi,"ET_END_WHILE");
+                        itoa(cont, NumBiOutOfTheWhile, 10);
+                        strcat(labelBi, NumBiOutOfTheWhile);
+                        rellenarPolaca2(&listaPolaca, numCell, labelBi);
+                        
+                      } else 
+                        {
+                            int cmp =  strcmpi(label, "LABELTRUE");
+                            //VER SI ES NECESARIO
+                        }
+                    }
+            };
+      /*  WHILE      	{ char numCell[10];
                   char labelInitWhile[20];
                   itoa(cont, numCell, 10);
                   strcpy(labelInitWhile, "ET_WHILE_");
@@ -202,7 +239,7 @@ ciclo:
                     };
                     printf("\n Regla -->  WHILE_T variable_while IN_T CORCHETE_A expr_coma_while CORCHETE_C DO_T sentencia ENDWHILE_T \n");
                   }
-              ;
+              ;*/
 
 entrada:
     READ ID             {
@@ -237,11 +274,35 @@ asignacion:
 
 condicion:
     comparacion                                       	{printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
-    |condicion AND comparacion                         	{
+    |   condicion 
+        AND 
+        comparacion                         	        {   //queda igual porque si una es neg salta
 															printf("\nREGLA 24: <condicion> --> <comparacion> AND <comparacion>\n");
 														}
-    |condicion OR comparacion                          	{
-															printf("\nREGLA 25: <condicion> --> <comparacion> OR <comparacion>\n");
+|condicion                              {//SI es neg deberia preguntar por la segunda
+                                            int numCell;
+                                            char label[20];
+                                            char NumBiOutOfTheWhile[20];
+                                            while(!emptyStack(&pilaNumCelda)){
+                                                popStack2(&pilaNumCelda, label, &numCell);
+                                                printf("%s",label);
+                                                int cmp =  strcmpi(label, "LABELFALSE");
+                                                if (cmp==0) {
+                                                    strcpy(label,"OR_SIG_COND_");
+                                                    itoa(cont, NumBiOutOfTheWhile, 10);
+                                                    strcat(label, NumBiOutOfTheWhile);
+                                                    rellenarPolaca2(&listaPolaca, numCell, label);
+                        
+                                                }
+                                            }
+                                        }
+    OR                                  {
+                                            char label[20];
+                                            strcpy(label,"OR_SIG_COND");
+                                            insertar_en_polaca(&listaPolaca,label,cont++);
+                                        }
+    comparacion                          	        {
+                                                            printf("\nREGLA 25: <condicion> --> <comparacion> OR <comparacion>\n");
 														}
     |PAR_A NOT condicion PAR_C AND comparacion         	{printf("\nREGLA 26: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
     |PAR_A NOT condicion PAR_C OR comparacion         	{printf("\nREGLA 27: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
@@ -253,45 +314,44 @@ comparacion:
                         {								
                             insertar_en_polaca(&listaPolaca,"CMP",cont++);
                             insertar_en_polaca(&listaPolaca,"BLE",cont++);
-                            pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+                            pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                             printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAY <expresion> \n");							
 					    } 
     |expresion OP_MEN expresion          	{
 						insertar_en_polaca(&listaPolaca,"CMP",cont++);
 						insertar_en_polaca(&listaPolaca,"BGE",cont++);
-                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
-						printf("\nTESTmenor");
+                        pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                        insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_MEN <expresion> \n");
 					} 
     |expresion OP_MENIGU expresion      	{
 						insertar_en_polaca(&listaPolaca,"CMP",cont++);
 						insertar_en_polaca(&listaPolaca,"BGT",cont++);
-                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
-						printf("\nREGLA 28: <comparacion> --> <expresion> OP_MENIGU <expresion> \n");
+                        pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                        insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+                        printf("\nREGLA 28: <comparacion> --> <expresion> OP_MENIGU <expresion> \n");
 					} 
     |expresion OP_MAYIGU expresion      	{
 						insertar_en_polaca(&listaPolaca,"CMP",cont++);
 						insertar_en_polaca(&listaPolaca,"BLT",cont++);
-                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
-						printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAYIGU <expresion> \n");
+                        pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                        insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+                        printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAYIGU <expresion> \n");
 					} 
     |expresion OP_IGUAL expresion       	{
 						insertar_en_polaca(&listaPolaca,"CMP",cont++);
 						insertar_en_polaca(&listaPolaca,"BNE",cont++);
-                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
-						printf("\nREGLA 28: <comparacion> --> <expresion> OP_IGUAL <expresion> \n");
+                        pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                        insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+                        printf("\nREGLA 28: <comparacion> --> <expresion> OP_IGUAL <expresion> \n");
 					} 
     |expresion OP_DIF expresion         	{	
 						insertar_en_polaca(&listaPolaca,"CMP",cont++);
 						insertar_en_polaca(&listaPolaca,"BET",cont++);
-                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
-                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
-						printf("\nREGLA 28: <comparacion> --> <expresion> OP_DIF <expresion> \n");
+                        pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
+                        insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
+                        printf("\nREGLA 28: <comparacion> --> <expresion> OP_DIF <expresion> \n");
 					};
 expresion:
     expresion OP_SUMA termino                           {   
