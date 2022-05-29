@@ -129,7 +129,6 @@ OP_RESTA                [-]
 {OP_DIV}         {yylval.strVal = strdup(yytext);printf("\nOperador Division: %s\n",yytext);return OP_DIV;}
 {OP_SUMA}        {yylval.strVal = strdup(yytext);printf("\nOperador Suma: %s\n",yytext);return OP_SUMA;}
 {OP_MULT}        {yylval.strVal = strdup(yytext);printf("\nOperador Multiplicacion: %s\n",yytext);return OP_MULT;} 
-{OP_ASIG}        {yylval.strVal = strdup(yytext);printf("\nOperador Asignacion: %s\n",yytext);return OP_ASIG;} 
 {OP_RESTA}       {yylval.strVal = strdup(yytext);printf("\nOperador Resta: %s\n",yytext);return OP_RESTA;}
 
 

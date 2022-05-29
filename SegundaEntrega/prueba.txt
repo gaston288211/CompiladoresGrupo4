@@ -2,26 +2,13 @@
 DECVAR
 	a1, b1 : FLOAT 
 	variable1 : STRING
-	p1, p2, p3 : FLOAT
+	p1, p2, p3 : INTEGER
 	
 
 ENDDEC
 
--/ IF /-
+WHILE 2==1  
+DO
+test:="test"
+ENDWHILE
 
-WRITE "HOLA MUNDO"
-WRITE "CHAU MUNDO"
-
-var:=a
-
--/ IF /-
-
--/ 32769 /-
-
--/ 214748364790 /-
-
--/ 333333333333333333333333333333333333333333333333333333333333333333333333333333335 /-
-
-var := -32768
-
--/ "holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAAholaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAA" /-

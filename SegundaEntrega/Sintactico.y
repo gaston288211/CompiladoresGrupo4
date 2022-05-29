@@ -44,7 +44,7 @@ extern int yylex();
 extern char * yyerror();
 
 
-void cargarTipoDato(tStack* pilaTipoVariables, tStack* pilaVariables);
+void cargarTipoDato(tList* symbolTable, tStack* pilaTipoVariables, tStack* pilaVariables);
 char* validarRangoString( char *text );
 char* validarRangoEntero( char *text );
 char* validarRangoID( char *text );
@@ -60,8 +60,11 @@ t_lista listaPolaca;
 tStack pilaNumCelda;
 tStack pilaVariables;
 tStack pilaTipoVariables;
+tList  symbolTable;
 int cont=1;
 
+char labelBodyWhile[20];
+char labelWhile[20];
 
 %}
 %union{
@@ -74,11 +77,6 @@ int cont=1;
 %left OP_MULT OP_DIV
 %right MENOS_UNARIO
 
-%token <strVal> OP_ASIG
-%token <strVal> OP_SUMA
-%token <strVal>  OP_RESTA
-%token <strVal> OP_DIV
-%token <strVal> OP_MULT
 %token  OP_MAY 
 %token  OP_MAYIGU 
 %token  OP_MEN 
@@ -104,7 +102,6 @@ int cont=1;
 %token <strVal> OP_RESTA
 %token <strVal> OP_ASIG
 %token <strVal> OP_DIV
-%token <strVal> OP_DIF
 %token <strVal> OP_MULT
 
 %%
@@ -123,17 +120,16 @@ sentencia:
     |entrada                        {printf("\nREGLA 8: <sentencia> --> <entrada>\n");};
 
 declaracion:
-<<<<<<< HEAD
     DECVAR listaDeclaraciones  ENDDEC   {  
                                             
                                             printf("\nREGLA 11: <declaracion> --> DECVAR <listaDeclaraciones> ENDDEC\n");
                                         };    
 listaDeclaraciones:
     listavar DP tipodato                        {
-                                                    cargarTipoDato(&pilaTipoVariables,&pilaVariables);
+                                                    cargarTipoDato(&symbolTable, &pilaTipoVariables,&pilaVariables);
                                                     printf("\nREGLA 11: <listaDeclaraciones> --> <listavar> DP <tipodato> \n");}   
     |listaDeclaraciones listavar DP tipodato    {
-                                                    cargarTipoDato(&pilaTipoVariables,&pilaVariables);
+                                                    cargarTipoDato(&symbolTable, &pilaTipoVariables,&pilaVariables);
                                                     printf("\nREGLA 11: <listaDeclaraciones> --> <listaDeclaraciones> <listavar> DP <tipodato> \n");
                                                 };    
 listavar:
@@ -164,7 +160,49 @@ seleccion:
     |IF condicion THEN bloque ENDIF                 {printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ENDIF \n");};
 
 ciclo:
-    WHILE ID IN COR_A lista COR_C DO bloque ENDWHILE	{printf("\nREGLA 19: <ciclo> --> WHILE ID IN COR_A <lista> COR_C DO <sentencia> ENDWHILE\n");};
+    WHILE      	{ char numCell[10];
+                  char labelInitWhile[20];
+                  itoa(cont, numCell, 10);
+                  strcpy(labelInitWhile, "ET_WHILE_");
+                  strcat(labelInitWhile, numCell);
+                  strcpy(labelWhile, labelInitWhile);
+                  insertar_en_polaca(&listaPolaca, labelInitWhile, cont++);
+                } 
+                condicion
+                DO {
+                  insertar_en_polaca(&listaPolaca, "BI", cont++);
+                  pushStack2(&pilaNumCelda, "BI_TO_POS", cont); 
+                   insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+                char numCellInitWhile[10];
+                  itoa(cont, numCellInitWhile, 10);
+                  strcpy(labelBodyWhile, "ET_INIT_WHILE_");
+                  strcat(labelBodyWhile, numCellInitWhile);
+                }
+                  bloque {
+                  insertar_en_polaca(&listaPolaca,"BI",cont++);
+                  insertar_en_polaca(&listaPolaca,labelWhile,cont++);
+                }
+                ENDWHILE {
+                    int numCell;
+                    char label[20];
+                    while(!emptyStack(&pilaNumCelda)){
+                      popStack2(&pilaNumCelda, label, &numCell);
+                      int cmp =  strcmpi(label, "BI_TO_POS");
+                      if (cmp==0) {
+                        char NumBiOutOfTheWhile[20];
+                        char labelBi[20];
+                        strcpy(labelBi,"BI_TO_POS_");
+                        itoa(cont, NumBiOutOfTheWhile, 10);
+                        strcat(labelBi, NumBiOutOfTheWhile);
+                        rellenarPolaca2(&listaPolaca, numCell, labelBi);
+                        
+                      } else
+                        
+                        rellenarPolaca2(&listaPolaca, numCell, labelBodyWhile);
+                    };
+                    printf("\n Regla -->  WHILE_T variable_while IN_T CORCHETE_A expr_coma_while CORCHETE_C DO_T sentencia ENDWHILE_T \n");
+                  }
+              ;
 
 entrada:
     READ ID             {
@@ -175,37 +213,27 @@ entrada:
 
 salida:
     WRITE CTE_STRING    {
-							insertar_en_polaca(&listaPolaca,"WRITE",cont++);
+							insertar_en_polaca(&listaPolaca,$2,cont++);
+                            insertar_en_polaca(&listaPolaca,"WRITE",cont++);
+
 							insertarString(&symbolTable, $2);
 							printf("\nREGLA 21: <salida> -->  WRITE CTE_STRING  \n");
 						};
 
 asignacion:
-<<<<<<< HEAD
     ID OP_ASIG expresion                                {
                                                              insertar_en_polaca(&listaPolaca,$1,cont++);
                                                              insertar_en_polaca(&listaPolaca,$2,cont++);
                                                              printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n");
                                                         }
     | ID OP_ASIG CTE_STRING                             {
-                                                             insertar_en_polaca(&listaPolaca,$1,cont++);                  insertar_en_polaca(&listaPolaca,$1,cont++);
                                                              insertar_en_polaca(&listaPolaca,$3,cont++);
+                                                             insertar_en_polaca(&listaPolaca,$1,cont++);                  
                                                              insertar_en_polaca(&listaPolaca,$2,cont++);
+										                     insertarString(&symbolTable, $3);
                                                              printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");
                                                         };
-=======
-    ID OP_ASIG expresion       		{
-										insertar_en_polaca(&listaPolaca,$1,cont++);
-										insertar_en_polaca(&listaPolaca,$2,cont++);
-										printf("\nREGLA 22: <asignacion> --> ID OP_ASIG <expresion> \n")
-									;}
-    |ID OP_ASIG CTE_STRING          {	
-										insertar_en_polaca(&listaPolaca,$1,cont++);
-										insertar_en_polaca(&listaPolaca,$2,cont++);
-										insertarString(&symbolTable, $3);
-										printf("\nREGLA 22: <asignacion> --> ID OP_ASIG CTE_STRING \n");
-									};
->>>>>>> 885a54dfdda70412e317ab4456ed4f41b7c06ef3
+
 
 condicion:
     comparacion                                       	{printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
@@ -221,12 +249,51 @@ condicion:
     |inlist                          					{printf("\nREGLA 10: <condicion> --> <inlist>\n");};
 
 comparacion:
-    expresion comparador expresion                     	{	
-															printf("\nREGLA 28: <comparacion> --> <expresion><comparador><expresion> \n");
-														};
-
+    expresion OP_MAY expresion                     		
+                        {								
+                            insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                            insertar_en_polaca(&listaPolaca,"BLE",cont++);
+                            pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+                            printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAY <expresion> \n");							
+					    } 
+    |expresion OP_MEN expresion          	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BGE",cont++);
+                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+						printf("\nTESTmenor");
+                        printf("\nREGLA 28: <comparacion> --> <expresion> OP_MEN <expresion> \n");
+					} 
+    |expresion OP_MENIGU expresion      	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BGT",cont++);
+                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+						printf("\nREGLA 28: <comparacion> --> <expresion> OP_MENIGU <expresion> \n");
+					} 
+    |expresion OP_MAYIGU expresion      	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BLT",cont++);
+                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+						printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAYIGU <expresion> \n");
+					} 
+    |expresion OP_IGUAL expresion       	{
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BNE",cont++);
+                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+						printf("\nREGLA 28: <comparacion> --> <expresion> OP_IGUAL <expresion> \n");
+					} 
+    |expresion OP_DIF expresion         	{	
+						insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						insertar_en_polaca(&listaPolaca,"BET",cont++);
+                        pushStack2(&pilaNumCelda,"_",cont);//guardar en pila posicion actual
+                            insertar_en_polaca(&listaPolaca,"_",cont++);//Avanzar
+						printf("\nREGLA 28: <comparacion> --> <expresion> OP_DIF <expresion> \n");
+					};
 expresion:
-<<<<<<< HEAD
     expresion OP_SUMA termino                           {   
                                                             insertar_en_polaca(&listaPolaca,$2,cont++);
                                                             printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");
@@ -250,83 +317,27 @@ termino:
     | factor                       {
                                         printf("\nREGLA 35: <termino> --> <factor> \n");
                                    };
-=======
-    expresion OP_SUMA termino                         	{printf("\nREGLA 29: <expresion> --> <expresion><OP_SUMA><termino> \n");}
-    |expresion OP_RESTA termino                        	{printf("\nREGLA 30: <expresion> --> <expresion><OP_RESTA><termino> \n");}
-    |termino                                           	{printf("\nREGLA 31: <expresion> --> <termino> \n");}
-    |OP_RESTA expresion %prec MENOS_UNARIO              {printf("\nREGLA 32: <expresion> --> OP_RESTA <expresion> \n");}                               ;
 
-termino:
-    termino OP_MULT factor                             	{printf("\nREGLA 33: <termino> --> <termino> OP_MULT <factor> \n");}
-    |termino OP_DIV factor                             	{printf("\nREGLA 34: <termino> --> <termino> OP_DIV <factor> \n");}
-    |factor                                            	{printf("\nREGLA 35: <termino> --> <factor> \n");};
->>>>>>> 885a54dfdda70412e317ab4456ed4f41b7c06ef3
-
-lista:
-    factor                                              {printf("\nREGLA 36: <lista> --> <factor> \n");}
-    |lista COMA factor                                 	{printf("\nREGLA 37: <lista> --> <lista> COMA <factor> \n");};
 
 factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 38: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     | CTE_FLOAT                 {
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
-<<<<<<< HEAD
+                                    insertarNumero(&symbolTable,$1);
                                     printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
                                 } 
     | ID                        {   
-=======
-									insertarNumero(&symbolTable,$1);
-									printf("\nREGLA 39: <factor> --> CTE_FLOAT\n");
+									insertar_en_polaca(&listaPolaca,$1,cont++);
+									printf("\nREGLA 39: <factor> --> ID\n");
                                 } 
-    | ID                        {
->>>>>>> 885a54dfdda70412e317ab4456ed4f41b7c06ef3
-                                    insertar_en_polaca(&listaPolaca,$1,cont++);
-                                    printf("\nREGLA 4000000000: <factor> --> ID\n");
-                                    
-                                } 
+
     | CTE_INTEGER               {
-<<<<<<< HEAD
-                                    insertar_en_polaca(&listaPolaca,$1,cont++);
-                                    printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");
-                                };
-=======
+
 									insertar_en_polaca(&listaPolaca,$1,cont++);
 									insertarNumero(&symbolTable,$1);
 									printf("\nREGLA 41: <factor> --> <CTE_INTEGER>\n");
 								};
->>>>>>> 885a54dfdda70412e317ab4456ed4f41b7c06ef3
 
-comparador:
-    OP_MAY         	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BLE",cont++);
-						printf("\nREGLA 42: <comparador> --> <OP_MAY>\n");
-					} 
-    |OP_MEN        	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BGE",cont++);
-						printf("\nREGLA 43: <comparador> --> <OP_MEN>\n");
-					} 
-    |OP_MENIGU     	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BGT",cont++);
-						printf("\nREGLA 44: <bloque> --> <OP_MENIGU>\n");
-					} 
-    |OP_MAYIGU     	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BLT",cont++);
-						printf("\nREGLA 45: <bloque> --> <OP_MAYIGU>\n");
-					} 
-    |OP_IGUAL      	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BNE",cont++);
-						printf("\nREGLA 46: <bloque> --> <OP_IGUAL>\n");
-					} 
-    |OP_DIF        	{	
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BET",cont++);
-						printf("\nREGLA 47: <bloque> --> <OP_DIF>\n");
-					};
 
 between:
     BETWEEN PAR_A ID COMA COR_A expresion PYC expresion COR_C PAR_C		{printf("\nREGLA 48: <between> --> <BETWEEN><PAR_A><ID><COMA><COR_A><expresion><PYC><expresion><COR_C><PAR_C>\n");}; 
@@ -346,12 +357,13 @@ inlist:
 int main(int argc,char *argv[])
 {
     
-    abrirTablaDeSimbolos();
+    //abrirTablaDeSimbolos();
     
     createListaPolaca(&listaPolaca);
     createStack(&pilaNumCelda);
     createStack(&pilaVariables);
     createStack(&pilaTipoVariables);
+    crearLista(&symbolTable);
 
 if ((yyin = fopen(argv[1], "rt")) == NULL)
     {
@@ -361,8 +373,7 @@ else
     {
         yyparse();
     }
-    escribirTablaSimbolos();
-    crearLista(&symbolTable);
+    //escribirTablaSimbolos();
     vaciar_polaca(&listaPolaca);
 	escribirTabla(&symbolTable);
     fclose(fpTabla);
@@ -555,23 +566,20 @@ void cargarVecTablaString(char * text, char* tipo)
 
     
 }
-void cargarTipoDato(tStack* pilaTipoVariables, tStack* pilaVariables)
+void cargarTipoDato(tList* symbolTable,tStack* pilaTipoVariables, tStack* pilaVariables)
 {
-        int j;
-    char * variableaux;
-    char * tipo;
-    if (emptyStack(pilaTipoVariables))
-        popStack(pilaTipoVariables,tipo);
-    while(emptyStack(pilaVariables))
+    int j;
+    char variableaux[100];
+    char tipo[100];
+    if (!emptyStack(pilaTipoVariables)){
+        printf("test1");
+        j=popStack(pilaTipoVariables,tipo);
+    }
+    printf("%s",tipo);
+    while(!emptyStack(pilaVariables))
     {
-        popStack(pilaVariables, variableaux);
-        for ( j=0 ;j< cantReg; j++)
-        {
-            if(strcmp(variableaux,tb[j].nombre)==0)
-            {
-                strcpy(tb[j].tipo,tipo);
-            }
-             strcpy(tb[j].tipo,"testt");
-        }
+        printf("test");
+       j=popStack(pilaVariables, variableaux);
+        insertarVariable(symbolTable, variableaux, tipo);  
     }
 }
