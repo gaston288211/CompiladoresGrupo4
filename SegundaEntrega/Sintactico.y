@@ -63,6 +63,7 @@ t_lista listaPolaca;
 tStack pilaNumCelda;
 tStack pilaVariables;
 tStack pilaTipoVariables;
+tStack pilaCondiciones;
 tList  symbolTable;
 int cont=1;
 
@@ -274,18 +275,23 @@ asignacion:
 
 condicion:
     comparacion                                       	{printf("\nREGLA 23: <condicion> --> <comparacion> \n");}
-    |   condicion 
+    |condicion 
         AND 
         comparacion                         	        {   //queda igual porque si una es neg salta
 															printf("\nREGLA 24: <condicion> --> <comparacion> AND <comparacion>\n");
 														}
-|condicion                              {//SI es neg deberia preguntar por la segunda
+    |PAR_A NOT                              {   //meto en la pila el not, y cuando leo las condiciones inserto el neg
+                                            pushStack(&pilaCondiciones,$2);
+                                        }
+        comparacion PAR_C
+    
+    |condicion                              {//SI es neg deberia preguntar por la segunda
                                             int numCell;
                                             char label[20];
                                             char NumBiOutOfTheWhile[20];
                                             while(!emptyStack(&pilaNumCelda)){
                                                 popStack2(&pilaNumCelda, label, &numCell);
-                                                printf("%s",label);
+                                                printf("%s - %d --------------\n",label, numCell);
                                                 int cmp =  strcmpi(label, "LABELFALSE");
                                                 if (cmp==0) {
                                                     strcpy(label,"OR_SIG_COND_");
@@ -304,51 +310,126 @@ condicion:
     comparacion                          	        {
                                                             printf("\nREGLA 25: <condicion> --> <comparacion> OR <comparacion>\n");
 														}
-    |PAR_A NOT condicion PAR_C AND comparacion         	{printf("\nREGLA 26: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
-    |PAR_A NOT condicion PAR_C OR comparacion         	{printf("\nREGLA 27: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
+    //|PAR_A NOT condicion PAR_C AND comparacion         	{printf("\nREGLA 26: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
+    //|PAR_A NOT condicion PAR_C OR comparacion         	{printf("\nREGLA 27: <condicion> --> PAR_A NOT <condicion> PAR_C <comparacion> \n");}
     |between                         					{printf("\nREGLA 9: <condicion> --> <between>\n");}
     |inlist                          					{printf("\nREGLA 10: <condicion> --> <inlist>\n");};
 
 comparacion:
     expresion OP_MAY expresion                     		
-                        {								
-                            insertar_en_polaca(&listaPolaca,"CMP",cont++);
-                            insertar_en_polaca(&listaPolaca,"BLE",cont++);
+                        {	char label[20];
+                            if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label);
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BGT",cont++);
+                            
+                                }
+                            }	
+                            else {						
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BLE",cont++);
+                            }
                             pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                             insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
-                            printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAY <expresion> \n");							
+                            printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAY <expresion> \n");	
+                            						
 					    } 
     |expresion OP_MEN expresion          	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BGE",cont++);
+						    char label[20];
+                            if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label );
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BLT",cont++);
+                            
+                                }
+                            }	
+                            else {
+                                insertar_en_polaca(&listaPolaca,"CMP",cont++);
+						        insertar_en_polaca(&listaPolaca,"BGE",cont++);
+                            }
                         pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_MEN <expresion> \n");
 					} 
     |expresion OP_MENIGU expresion      	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BGT",cont++);
+                            char label[20];
+                            if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label);
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BLE",cont++);
+                            
+                                }
+                            }	
+                            else {
+                    
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BGT",cont++);
+                            }
                         pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_MENIGU <expresion> \n");
 					} 
     |expresion OP_MAYIGU expresion      	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BLT",cont++);
+                        char label[20];
+                        if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label);
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BGE",cont++);
+                            
+                                }
+                            }	
+                            else {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BLT",cont++);
+                            }
                         pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_MAYIGU <expresion> \n");
 					} 
     |expresion OP_IGUAL expresion       	{
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BNE",cont++);
+                        char label[20];
+                            if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label );
+                                printf("%s-test",label);
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BET",cont++);
+                            
+                                }
+                            }	
+                            else {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BNE",cont++);
+                            }
                         pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_IGUAL <expresion> \n");
 					} 
     |expresion OP_DIF expresion         	{	
-						insertar_en_polaca(&listaPolaca,"CMP",cont++);
-						insertar_en_polaca(&listaPolaca,"BET",cont++);
+                        char label[20];
+                            if(!emptyStack(&pilaCondiciones)){
+                                popStack(&pilaCondiciones, label);
+                                
+                                if (strcmp(label,"NOT")==0)
+                                {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BNE",cont++);
+                            
+                                }
+                            }	
+                            else {
+                                    insertar_en_polaca(&listaPolaca,"CMP",cont++);
+                                    insertar_en_polaca(&listaPolaca,"BET",cont++);
+                            }
                         pushStack2(&pilaNumCelda,LABELFALSE,cont);//guardar en pila posicion actual
                         insertar_en_polaca(&listaPolaca,LABELFALSE,cont++);//Avanzar
                         printf("\nREGLA 28: <comparacion> --> <expresion> OP_DIF <expresion> \n");

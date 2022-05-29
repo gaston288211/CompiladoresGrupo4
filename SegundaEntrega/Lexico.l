@@ -95,7 +95,7 @@ OP_RESTA                [-]
 
 {AND}              {printf("\nAND: %s\n",yytext);return AND;}
 {OR}               {printf("\nOR: %s\n",yytext);return OR;}
-{NOT}              {printf("\nNOT: %s\n",yytext);return NOT;}
+{NOT}              {yylval.strVal = strdup(yytext);printf("\nNOT: %s\n",yytext);return NOT;}
 
 
 
