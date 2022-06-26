@@ -14,11 +14,12 @@ typedef struct sNode
 
 typedef tNode* tList;
 
+int obtenerDatos(tList *p, char* name, char* dataType, char* value, int * length);
 void crearLista(tList *p);
 int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int length);
 int insertarVariable(tList *p, char* name, char* dataType); 
 int insertarString(tList *p, char* name);
-int insertarNumero(tList *p, char* lex);
+int insertarNumero(tList *p, char* lex, char* dataType);
 void escribirTabla(tList *p);
 char* formatoString(char* lex);
 
@@ -53,8 +54,26 @@ int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int lengt
 
     return SUCCESS;
 }
+int obtenerDatos(tList *p, char* name, char* dataType, char* value, int* length)
+{
+    int result = -1;
+    printf("%s",name);
+    while(*p && ((result = (strcmp((*p)->name, name))) < 0))
+        p = &(*p)->next;
+    if(result == 0)
+    {   
+        strcpy(dataType,(*p)->dataType);
+        strcpy(value, (*p)->value);
+        *length=(*p)->length;
 
-int insertarNumero(tList *p, char* lex) 
+        return result;
+    }
+    return result;
+}
+
+
+
+int insertarNumero(tList *p, char* lex, char* dataType) 
 {
     int result = -1;
     char name[100];
@@ -62,7 +81,7 @@ int insertarNumero(tList *p, char* lex)
     strcpy(name, "_");
     strcat(name, lex); 
 
-    result = insertarEnOrden(p, name, " ", lex, 0);
+    result = insertarEnOrden(p, name, dataType, lex, 0);
 
     if(result == DUPLICATE){
         //printf("Lexema %s ya se ingreso en la tabla de simbolos\n",lex);
@@ -82,7 +101,7 @@ int insertarString(tList *p, char* lex)
     strcpy(name, "_");
     strcat(name, newName);
 
-    result = insertarEnOrden(p, name, " ", newName, strlen(newName));
+    result = insertarEnOrden(p, name, "CTE_STRING", newName, strlen(newName));
 
     if(result == DUPLICATE){
         // printf("Lexema %s ya se ingreso en la tabla de simbolos\n",lex);

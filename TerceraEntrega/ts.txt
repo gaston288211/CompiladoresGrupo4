@@ -3,10 +3,13 @@ ______________________________TABLA DE SIMBOLOS_______________________________
 _______________________________________________________________________________
 |NOMBRE                   |TIPODATO      |VALOR                    |LONGITUD  |
 _______________________________________________________________________________
-|_2                       |              |2                        |0         |
-|_54                      |              |54                       |0         |
-|_ASD                     |              |ASD                      |3         |
-|_puto                    |              |puto                     |4         |
+|_11.22                   |CTE_FLOAT     |11.22                    |0         |
+|_2.3                     |CTE_FLOAT     |2.3                      |0         |
+|_54                      |CTE_INTEGER   |54                       |0         |
+|_ANIDADO                 |CTE_STRING    |ANIDADO                  |7         |
+|_FALSO                   |CTE_STRING    |FALSO                    |5         |
+|_VEERDADER               |CTE_STRING    |VEERDADER                |9         |
+|_puto                    |CTE_STRING    |puto                     |4         |
 |a1                       |FLOAT         |                         |0         |
 |b1                       |FLOAT         |                         |0         |
 |p1                       |INTEGER       |                         |0         |

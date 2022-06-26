@@ -147,6 +147,6 @@ OP_RESTA                [-]
 
 %%
 char* yyerror(void){
-    printf("Error Lexico en linea %s %d \n",yytext ,yylineno) ;
+    printf("Error en linea %s %d \n",yytext ,yylineno) ;
     exit(1);
 }

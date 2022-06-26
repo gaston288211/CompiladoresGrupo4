@@ -7,11 +7,18 @@ DECVAR
 
 ENDDEC
 
-IF var1==2 
+variable1:="asd"
+p1222:="Asd"
+
+IF BETWEEN (z, [2.3 ; 11.22])
 THEN 
-WRITE "puto"
+IF var==54 
+THEN 
+WRITE "ANIDADO"
+ENDIF
+WRITE "VEERDADER"
 ELSE
-WRITE "ASD"
+WRITE "FALSO"
 ENDIF
 
 

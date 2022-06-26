@@ -6,6 +6,8 @@
 #include <stdlib.h>
 
 #include "y.tab.h"
+#define SUCCESS 1
+#define DUPLICATE 2
 
 #define STR_LIMITE 30
 #define ID_LIMITE 30
@@ -67,6 +69,7 @@ tStack pilaCondiciones;
 tStack pilaInList;
 tList  symbolTable;
 int cont=1;
+int contIF=0;
 
 char labelIfFin[30];
 char labelIfTrue[30];
@@ -156,31 +159,33 @@ listavar:
 									
 tipodato:
     INTEGER                         {
-                                        pushStack(&pilaTipoVariables,$1);
+                                        pushStack(&pilaTipoVariables,"INTEGER");
                                         printf("\nREGLA 14: <tipodato> --> INTEGER  \n");
                                     }
     |FLOAT                          {
-                                        pushStack(&pilaTipoVariables,$1);
+                                        pushStack(&pilaTipoVariables,"FLOAT");
                                         printf("\nREGLA 15: <tipodato> --> FLOAT \n");}
     |STRING                         {
-                                        pushStack(&pilaTipoVariables,$1);
+                                        pushStack(&pilaTipoVariables,"STRING");
                                         printf("\nREGLA 16: <tipodato> --> STRING \n");
                                     };
 									
 seleccion:
-    condicion_if bloque ELSE    {
+    condicion_if  bloque ELSE    {
 									int numCell;
 									int cmp;
 									char label[20];
-									while(!emptyStack(&pilaNumCelda))
+                                    strcpy(label,"Ini");
+											
+									while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0)
 									{
 										popStack2(&pilaNumCelda, label, &numCell);
 										cmp=strcmpi(label, LABELFALSE);
 										if (cmp==0) {
 											char NumBiOutOfTheWhile[20];
-											strcpy(labelIfFalse,"ET_FALSE_IF");
-											itoa(cont, NumBiOutOfTheWhile, 10);
-											strcat(labelIfFalse, NumBiOutOfTheWhile);
+											//strcpy(labelIfFalse,"ET_FALSE_IF_");
+											itoa(cont+2, NumBiOutOfTheWhile, 10);
+											strcpy(labelIfFalse, NumBiOutOfTheWhile);
 											rellenarPolaca2(&listaPolaca, numCell, labelIfFalse);
 										} 
 										else 
@@ -196,13 +201,15 @@ seleccion:
 									insertar_en_polaca(&listaPolaca,"BI",cont++);
 									pushStack2(&pilaNumCelda,labelIfFin,cont);//guardar en pila posicion actual
 									insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
+                                    insertar_en_polaca(&listaPolaca,"ET_FALSE_IF",cont++);
 								}
      
     bloque ENDIF	{
 						int numCell;
 						int cmp;
 						char label[20];
-						while(!emptyStack(&pilaNumCelda))
+                        strcpy(label,"Ini");
+                        while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0)
 						{
 							popStack2(&pilaNumCelda, label, &numCell);
 							cmp=strcmpi(label, labelIfFin);
@@ -210,34 +217,41 @@ seleccion:
 							{
 								char NumBiOutOfTheWhile[20];
 								itoa(cont, NumBiOutOfTheWhile, 10);
-								strcat(labelIfFin, NumBiOutOfTheWhile);
-								rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
+								strcpy(label, NumBiOutOfTheWhile);
+								rellenarPolaca2(&listaPolaca, numCell, label);
 							}
 						}
+                        insertar_en_polaca(&listaPolaca,"ET_END_IF",cont++);
                         printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
 					}
 	|condicion_if bloque ENDIF	{
 									int numCell;
 									int cmp;
 									char label[20];
-									while(!emptyStack(&pilaNumCelda))
+                                    strcpy(label,"Ini");
+									while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0)
 									{
 										popStack2(&pilaNumCelda, label, &numCell);
 										cmp=strcmpi(label, LABELFALSE);
 										if (cmp==0) 
 										{
 											char NumBiOutOfTheWhile[20];
-											strcpy(labelIfFin,"ET_END_IF_");
+											//strcpy(labelIfFin,"ET_END_IF_");
 											itoa(cont, NumBiOutOfTheWhile, 10);
-											strcat(labelIfFin, NumBiOutOfTheWhile);
+											strcpy(labelIfFin, NumBiOutOfTheWhile);
 											rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
 										}
 									}		
+                                    insertar_en_polaca(&listaPolaca,"ET_END_IF",cont++);
 									printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
 								};
 								
 condicion_if:
-    IF condicion THEN	{
+    IF                  {   
+                            contIF++;
+                            pushStack2(&pilaNumCelda,"IF_ANIDADO",contIF);
+                        }
+        condicion THEN	{
 							char num[20];
 							strcpy(labelIfTrue,"ET_TRUE_IF");
 							itoa(cont, num, 10);
@@ -315,6 +329,24 @@ asignacion:
 								printf("\nREGLA 21: <asignacion> --> ID OP_ASIG <expresion> \n");
 							}
     |ID OP_ASIG CTE_STRING  {
+                                int result=0;
+                                int length , cmp;
+                                char  tipodato[50],  valor[50];
+                                result=obtenerDatos(&symbolTable,$1,tipodato, valor ,&length);
+                                if(result==0)
+                                {   
+                                    cmp=strcmpi(tipodato,"STRING");
+                                    if(cmp!=0)
+                                    {
+                                        
+                                        printf("\nError se esta asingando una cosntante a un ID declarado como %s\n",tipodato);
+                                        yyerror();
+                                    }
+                                }else
+                                {
+                                    printf("\nError %s no fue declarado\n",$1);
+                                    yyerror();
+                                }
 								insertar_en_polaca(&listaPolaca,$3,cont++);
 								insertar_en_polaca(&listaPolaca,$1,cont++);                  
 								insertar_en_polaca(&listaPolaca,$2,cont++);
@@ -525,7 +557,7 @@ factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 41: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     |CTE_FLOAT                  {
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
-                                    insertarNumero(&symbolTable,$1);
+                                    insertarNumero(&symbolTable,$1,"CTE_FLOAT");
                                     printf("\nREGLA 42: <factor> --> CTE_FLOAT\n");
                                 } 
     |ID                         {   
@@ -534,7 +566,7 @@ factor:
                                 } 
     |CTE_INTEGER                {
 									insertar_en_polaca(&listaPolaca,$1,cont++);
-									insertarNumero(&symbolTable,$1);
+									insertarNumero(&symbolTable,$1,"CTE_INTEGER");
 									printf("\nREGLA 44: <factor> --> <CTE_INTEGER>\n");
 								};
 
@@ -832,17 +864,23 @@ void cargarVecTablaString(char * text, char* tipo)
 void cargarTipoDato(tList* symbolTable,tStack* pilaTipoVariables, tStack* pilaVariables)
 {
     int j;
+    int resultado;
     char variableaux[100];
     char tipo[100];
     if (!emptyStack(pilaTipoVariables)){
-        printf("test1");
+        //printf("test1");
         j=popStack(pilaTipoVariables,tipo);
     }
     printf("%s",tipo);
     while(!emptyStack(pilaVariables))
     {
-        printf("test");
+        //printf("test");
        j=popStack(pilaVariables, variableaux);
-        insertarVariable(symbolTable, variableaux, tipo);  
+        resultado=insertarVariable(symbolTable, variableaux, tipo);  
+        if (resultado==DUPLICATE)
+        {
+            printf("\nError la variable %s ya fue declarada\n",variableaux);
+            yyerror();
+        }
     }
 }
