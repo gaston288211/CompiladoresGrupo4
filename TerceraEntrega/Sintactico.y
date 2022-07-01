@@ -51,6 +51,8 @@ extern char * yyerror();
 char* listaComparacion[2000];
 int indiceComparacion=0;
 
+// Para assembler
+	FILE * pfASM; // Final.asm
 
 void cargarTipoDato(tList* symbolTable, tStack* pilaTipoVariables, tStack* pilaVariables);
 char* validarRangoString( char *text );
@@ -62,9 +64,10 @@ void cargarVecTablaString(char * text, char * tipo);
 void cargarVecTablaID(char * text);
 void cargarVecTablaNumero(char * text, char * tipo);
 int abrirTablaDeSimbolos();
-void insertarListaComp(char* lex, char* dataType) ;
-void compararTipos();
-
+void insertarListaComp(char* lex) ;
+void compararTiposAsig();
+void compararTiposAsigSting();
+void compararTiposComp();
 /// segunda entrega
 t_lista listaPolaca;
 tStack pilaNumCelda;
@@ -297,10 +300,10 @@ ciclo:
 						{
 							char NumBiOutOfTheWhile[20];
 							char labelBi[20];
-							strcpy(labelBi,"ET_END_WHILE");
+							strcpy(labelBi,"ET_END_WHILE_");
 							itoa(cont, NumBiOutOfTheWhile, 10);
+							rellenarPolaca2(&listaPolaca, numCell, NumBiOutOfTheWhile);
 							strcat(labelBi, NumBiOutOfTheWhile);
-							rellenarPolaca2(&listaPolaca, numCell, labelBi);
                             insertar_en_polaca(&listaPolaca,labelBi,cont++);
 						} 
 						else 
@@ -330,34 +333,18 @@ salida:
 						};
 						
 asignacion:
-ID                          {
-                                insertarListaComp($1);
-                            }
+ID                          
     OP_ASIG expresion    {
+                                listaComparacion[0]=$1;
 								insertar_en_polaca(&listaPolaca,$1,cont++);
 								insertar_en_polaca(&listaPolaca,$2,cont++);
-                                compararTipos();
+                                compararTiposAsig();
 								printf("\nREGLA 21: <asignacion> --> ID OP_ASIG <expresion> \n");
 							}
     |ID OP_ASIG CTE_STRING  {
-                                int result=0;
-                                int length , cmp;
-                                char  tipodato[50],  valor[50];
-                                result=obtenerDatos(&symbolTable,$1,tipodato, valor ,&length);
-                                if(result==0)
-                                {   
-                                    cmp=strcmpi(tipodato,"STRING");
-                                    if(cmp!=0)
-                                    {
-                                        
-                                        printf("\nError se esta asingando una cosntante a un ID declarado como %s\n",tipodato);
-                                        yyerror();
-                                    }
-                                }else
-                                {
-                                    printf("\nError %s no fue declarado\n",$1);
-                                    yyerror();
-                                }
+                                insertarListaComp($1);
+                                insertarListaComp($3);
+                                compararTiposAsigSting();
 								insertar_en_polaca(&listaPolaca,$3,cont++);
 								insertar_en_polaca(&listaPolaca,$1,cont++);                  
 								insertar_en_polaca(&listaPolaca,$2,cont++);
@@ -579,7 +566,7 @@ factor:
                                 } 
     |CTE_INTEGER                {
 									insertar_en_polaca(&listaPolaca,$1,cont++);
-									insertarNumero(&symbolTable,$1);
+									insertarNumero(&symbolTable,$1,"CTE_INTEGER");
                                     insertarListaComp($1);
 									printf("\nREGLA 44: <factor> --> <CTE_INTEGER>\n");
 								};
@@ -901,16 +888,83 @@ void cargarTipoDato(tList* symbolTable,tStack* pilaTipoVariables, tStack* pilaVa
 
 void insertarListaComp(char* lex) 
 {
-    listaComparacion[indiceComparacion]=lex;
     indiceComparacion++;
+    printf("\n%d\n",indiceComparacion);
+    listaComparacion[indiceComparacion]=lex;
+    
 }
-compararTipos()
+void compararTiposAsigSting()
+{
+    int result=0;
+    int length , cmp;
+    char  tipodato[50],  valor[50];
+    result=obtenerDatos(&symbolTable,listaComparacion[0],tipodato, valor ,&length);
+    if(result==0)
+    {   
+        cmp=strcmpi(tipodato,"STRING");
+        if(cmp!=0)
+        {
+            
+            printf("\nError se esta asingando una cosntante a un ID declarado como %s\n",tipodato);
+            yyerror();
+        }
+    }else
+    {
+        printf("\nError %s no fue declarado\n",listaComparacion[0]);
+        yyerror();
+    }
+}
+void compararTiposAsig()
+{
+    char auxbaseNombre[50], auxbaseTipo[50],  auxbaseValor[50];
+    char auxcompNombre[50], auxcompTipo[50],  auxcompValor[50];
+    int lengthbase, lengthcomp, result;
+    
+    strcpy(auxbaseNombre, listaComparacion[0]);
+    result=obtenerDatos(&symbolTable,auxbaseNombre,auxbaseTipo, auxbaseValor ,&lengthbase);
+    if(result==0)
+    { 
+        printf("primerif\n %d",indiceComparacion);
+        while(indiceComparacion>0)
+        {
+            printf("while %d",indiceComparacion);
+            result=obtenerDatos(&symbolTable,listaComparacion[indiceComparacion],auxcompTipo, auxcompValor ,&lengthcomp);
+            //si son iguales Salgo directamente
+            if(result==0)
+                { 
+                    printf("\ncompara base: %s --- tipo compara: %s-%s", auxbaseTipo, auxcompTipo,listaComparacion[indiceComparacion]);
+                    if (strcmp(auxbaseTipo, auxcompTipo)!=0)
+                    {       
+                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxbaseTipo,"CTE_FLOAT") || strcmp(auxbaseTipo,"FLOAT")))
+                        {
+                            printf("\nSe esta asignando una expresion tipo float a un entero\n");
+                            yyerror();
+                        }
+                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxbaseTipo,"CTE_STRING") || strcmp(auxbaseTipo,"STRING")))
+                        {
+                            printf("\nSe esta asignando una expresion tipo string a un entero\n");
+                            yyerror();
+                        }
+                        if(strcmp(auxbaseTipo,"FLOAT")==0 && (strcmp(auxbaseTipo,"CTE_STRING") || strcmp(auxbaseTipo,"STRING")))
+                        {
+                            printf("\nSe esta asignando una expresion tipo string a un float\n");
+                            yyerror();
+                        }
+
+                    }
+                }
+            indiceComparacion--;
+        }
+    }
+    indiceComparacion=0;
+}
+void compararTiposComp()
 {
     char auxbaseNombre[50], auxbaseTipo[50],  auxbaseValor[50];
     char auxcompNombre[50], auxcompTipo[50],  auxcompValor[50];
     int lengthbase, lengthcomp;
     
-    strcpy(auxbase, listaComparacion[i]);
+    strcpy(auxbaseNombre, listaComparacion[0]);
     obtenerDatos(&symbolTable,auxbaseNombre,auxbaseTipo, auxbaseValor ,&lengthbase);
 
     while(indiceComparacion>0)
@@ -937,8 +991,389 @@ compararTipos()
 
         }
         indiceComparacion--;
+
     }
+    indiceComparacion=0;
+}
+
+//////// ASSEMBLER 
+//Funcion que se encarga de generar el archivo y completarlo
+void generarAssembler(){
+	pfASM = fopen("asm/Final.asm", "w");
+    // Creo pilas para tercetos.
+    crear_pila(&pVariables);
+    generarEncabezado();
+    generarDatos();
+    generarCodigo();
+    generarFin();
+    fclose(pfASM);
+}
+
+void generarEncabezado(){
+    fprintf(pfASM, "\nINCLUDE macros2.asm\t\t ;incluye macros\n");
+    fprintf(pfASM, "INCLUDE number.asm\t\t ;incluye el asm para impresion de numeros\n");
+    fprintf(pfASM, "\n.MODEL LARGE\t\t ; tipo del modelo de memoria usado.\n");
+    fprintf(pfASM, ".386\n");
+	fprintf(pfASM, ".387\n");
+    fprintf(pfASM, ".STACK 200h\t\t ; bytes en el stack\n");
+}
+
+void generarDatos(){
+    fprintf(pfASM, "\t\n.DATA\t\t ; comienzo de la zona de datos.\n");
+    fprintf(pfASM, "\tTRUE equ 1\n");
+    fprintf(pfASM, "\tFALSE equ 0\n");
+    fprintf(pfASM, "\tMAXTEXTSIZE equ %d\n",COTA_STR);
+
+    tList* auxSimbolos = symbTable;
+	int i;
+	//int tamTS = obtenerTamTS();
+	//for(i=0; i<tamTS; i++)
+	while(*auxSimbolos)
+    {
+		if(strcmp((*auxSimbolos)->dataType, "INTEGER") == 0 )
+		{
+			fprintf(pfASM, "\t%s dd 0\n",(*auxSimbolos)->name);
+		}
+		if(strcmp((*auxSimbolos)->dataType, "FLOAT") == 0 )
+		{
+			fprintf(pfASM, "\t%s dd 0.0\n",(*auxSimbolos)->name);
+		}
+		if(strcmp((*auxSimbolos)->dataType, "STRING") == 0 )
+		{
+			fprintf(pfASM, "\t%s db MAXTEXTSIZE dup(?), '$'\n",(*auxSimbolos)->name);
+		}
+		if(strcmp((*auxSimbolos)->dataType, "CTE_INTEGER") == 0 || strcmp((*auxSimbolos)->dataType, "CTE_FLOAT") == 0 )
+		{
+            fprintf(pfASM, "\t%s dd %s\n",(*auxSimbolos)->name, (*auxSimbolos)->value);
+		}
+		if(strcmp((*auxSimbolos)->dataType, "CTE_STRING") == 0)
+		{
+			int longitud = (*auxSimbolos)->length;
+			int size = STR_LIMITE - longitud;
+			fprintf(pfASM, "\t%s db %s, '$', %d dup(?)\n", (*auxSimbolos)->name, (*auxSimbolos)->value, size);
+		}
+	}
+	
+}
+
+void imprimirFuncString(){
+    int c;
+    FILE *file;
+    file = fopen("string.asm", "r");
+    if (file) {
+        fprintf(pfASM,"\n");
+        while ((c = getc(file)) != EOF)
+        fprintf(pfASM,"%c",c);
+        fprintf(pfASM,"\n\n");
+        fclose(file);
+    }
+}
+//adaptar a polaca----------------------------
+void generarCodigo(){
+    fprintf(pfASM, "\n.CODE ;Comienza sector de codigo\n");
+
+    imprimirFuncString();
+
+    //Comienza codigo usuario
+    fprintf(pfASM, "START: \t\t;Codigo assembler resultante.\n");
+    fprintf(pfASM, "\tmov AX,@DATA \t\t;Comienza sector de datos\n");
+    fprintf(pfASM, "\tmov DS,AX\n");
+    fprintf(pfASM, "\tfinit\n\n");
+
+	int i;
+	int tamTercetos = obtenerIndiceActual();
+
+	char aux1[50];
+	char aux2[50];
+	char auxEtiqueta[50];
+
+	int flag;
+	for(i=0; i<tamTercetos; i++)
+	{
+		char operador[50];
+		strcpy(operador,tercetos[i].operador);
+		flag = 0;
+
+		if(strcmp(operador, "=") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;ASIGNACIÓN\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+			char * tipo = recuperarTipoTS(aux1);
+    		char auxTipo[50] = "";
+			strcpy(auxTipo, tipo);
+
+			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
+			{
+				fprintf(pfASM, "\tmov ax,@DATA\n");
+                fprintf(pfASM, "\tmov es,ax\n");
+                fprintf(pfASM, "\tmov si,OFFSET %s ;apunta el origen al auxiliar\n",aux1);
+                fprintf(pfASM, "\tmov di,OFFSET %s ;apunta el destino a la cadena\n",aux2);
+				fprintf(pfASM, "\tcall COPIAR ;copia los string\n\n");
+			}
+			else
+			{
+				fprintf(pfASM, "\tfld %s\n",aux1);
+                fprintf(pfASM, "\tfstp %s\n\n",aux2);
+			}
+		}
+
+		if(strcmp(operador, "CMP") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;CMP\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+			// fprintf(pfASM,"\t%s\n",auxEtiqueta);
+			fprintf(pfASM, "\tfld %s\n",aux1);
+            fprintf(pfASM, "\tfld %s\n",aux2);
+            fprintf(pfASM, "\tfcomp\n");
+            fprintf(pfASM, "\tfstsw ax\n");
+            fprintf(pfASM, "\tfwait\n");
+            fprintf(pfASM, "\tsahf\n\n");
+		}
+
+		if(strstr(operador, "ETIQ") != NULL)
+		{
+			flag = 1;
+			fprintf(pfASM,"\n\n%s:\n",operador);
+		}
+
+		if(strcmp(operador, "JMP") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tjmp %s\n",etiqueta);
+		}
+
+		if(strcmp(operador, "JE") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tje %s\n",etiqueta);
+		}
+
+		if(strcmp(operador, "JNE") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tjne %s\n", etiqueta);
+		}
+
+		if(strcmp(operador, "JB") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tjb %s\n", etiqueta);
+		}
+
+		if(strcmp(operador, "JBE") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tjbe %s\n", etiqueta);
+		}
+
+		if(strcmp(operador, "JA") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tja %s\n", etiqueta);
+		}
+
+		if(strcmp(operador, "JAE") == 0)
+		{
+			flag = 1;
+			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
+			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
+            fprintf(pfASM, "\tjae %s\n", etiqueta);
+		}
+
+		if(strcmp(operador, "-") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;RESTA\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+            fprintf(pfASM, "\tfld %s\n",aux1);
+            fprintf(pfASM, "\tfld %s\n",aux2);
+            fprintf(pfASM, "\tfsub\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
+
+		if(strcmp(operador, "+") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;SUMA\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+			// fprintf(pfASM,"\t%s\n",auxEtiqueta);
+			fprintf(pfASM, "\tfld %s\n",aux1);
+            fprintf(pfASM, "\tfld %s\n",aux2);
+            fprintf(pfASM, "\tfadd\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
+
+		if(strcmp(operador, "*") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;MULTIPLICACION\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+			fprintf(pfASM, "\tfld %s\n",aux1);
+            fprintf(pfASM, "\tfld %s\n",aux2);
+            fprintf(pfASM, "\tfmul\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
+
+		if(strcmp(operador, "/") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;DIVISION\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+
+			fprintf(pfASM, "\tfld %s\n",aux1);
+            fprintf(pfASM, "\tfld %s\n",aux2);
+            fprintf(pfASM, "\tfdiv\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
+
+		if(strcmp(operador, "MOD") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;MOD\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
+			
+			fprintf(pfASM, "\tfld %s\n",aux1);
+			fprintf(pfASM, "\tfld %s\n",aux2);
+			fprintf(pfASM, "\tfdiv\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
 
 
+		if(strcmp(operador, "DIV") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;DIV\n");
+			sacar_de_pila(&pVariables,&aux2);
+			sacar_de_pila(&pVariables,&aux1);
 
+			fprintf(pfASM, "\tfild %s\n",aux1);
+			fprintf(pfASM, "\tfild %s\n",aux2);
+			fprintf(pfASM, "\tfdiv\n");
+
+			char auxStr[50] = "";
+			sprintf(auxStr, "@aux%d",i);
+			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
+			insertarTokenEnTS("",auxStr);
+			poner_en_pila(&pVariables,&auxStr);
+		}
+
+		if(strcmp(operador, "READ") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;READ\n");
+			sacar_de_pila(&pVariables,&aux1);
+
+			char * tipo = recuperarTipoTS(aux1);
+    		char auxTipo[50] = "";
+			strcpy(auxTipo, tipo);
+
+			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
+			{
+				fprintf(pfASM,"\tdisplayString %s\n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+			if(strcmp(tipo,"CONST_INT") == 0 || strcmp(tipo,"INTEGER") == 0)
+			{
+   				fprintf(pfASM,"\tDisplayInteger %s 2\n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+			if(strcmp(tipo,"CONST_REAL") == 0 || strcmp(tipo,"REAL") == 0)
+			{
+				fprintf(pfASM,"\tDisplayFloat %s 2\n",aux1);
+                fprintf(pfASM, "\tnewLine 1\n\n");
+			}
+		}
+
+		if(strcmp(operador, "PRINT") == 0)
+		{
+			flag = 1;
+			fprintf(pfASM,"\t;PRINT\n");
+			sacar_de_pila(&pVariables,&aux1);
+
+			char * tipo = recuperarTipoTS(aux1);
+    		char auxTipo[50] = "";
+			strcpy(auxTipo, tipo);
+
+			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
+			{
+				fprintf(pfASM,"\tgetString %s\n\n",aux1);
+			}
+			else
+			{
+				fprintf(pfASM,"\tGetFloat %s\n\n",aux1);
+			}
+		}
+
+		if(flag == 0)
+		{
+			char * nombre = recuperarNombreTS(operador);
+			char auxNombre[50] = "";
+			strcpy(auxNombre, nombre);
+      poner_en_pila(&pVariables,&auxNombre);
+		}
+	}
+
+	while(pila_vacia(&pVariables) != PILA_VACIA)
+	{
+		char varApilada[50] = "";
+		sacar_de_pila(&pVariables, &varApilada);
+	}
+}
+
+void generarFin(){
+    fprintf(pfASM, "\nTERMINAR: ;Fin de ejecución.\n");
+    fprintf(pfASM, "\tmov ax, 4C00h ;termina la ejecución.\n");
+    fprintf(pfASM, "\tint 21h ;syscall\n");
+    fprintf(pfASM, "\nEND START ;final del archivo.");
 }
