@@ -1,6 +1,7 @@
 #include "pila.h"
 #define SUCCESS 1
 #define DUPLICATE 2
+#define NO_EXISTE 3
 #define NO_MEMORY 0
 
 typedef struct sNode
@@ -22,13 +23,38 @@ int insertarString(tList *p, char* name);
 int insertarNumero(tList *p, char* lex, char* dataType);
 void escribirTabla(tList *p);
 char* formatoString(char* lex);
+int insertar(tList *p, char* name, char* dataType, char* value, int length);
 
 
 void crearLista(tList *p)
 {
     *p = NULL;
 }
+int insertar(tList *p, char* name, char* dataType, char* value, int length)
+{
+    int result = -1;
+    tNode* nue = (tNode*)malloc(sizeof(tNode));
+    
+    if(!nue)
+        return NO_MEMORY;
 
+    while(*p )
+        p = &(*p)->next;
+
+    if(result == 0)
+        return DUPLICATE;
+    strcpy(nue->name, name);
+    strcpy(nue->dataType, dataType);
+    strcpy(nue->value, value);
+    
+    nue->length = length;
+
+    nue->next = *p;
+
+    *p = nue;
+
+    return SUCCESS;
+}
 int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int length)
 {
     int result = -1;
@@ -57,7 +83,6 @@ int insertarEnOrden(tList *p, char* name, char* dataType, char* value, int lengt
 int obtenerDatos(tList *p, char* name, char* dataType, char* value, int* length)
 {
     int result = -1;
-    printf("%s",name);
     while(*p && ((result = (strcmp((*p)->name, name))) < 0))
         p = &(*p)->next;
     if(result == 0)
@@ -65,10 +90,10 @@ int obtenerDatos(tList *p, char* name, char* dataType, char* value, int* length)
         strcpy(dataType,(*p)->dataType);
         strcpy(value, (*p)->value);
         *length=(*p)->length;
-
+        //printf("\n%s",dataType);
         return result;
     }
-    return result;
+    return NO_EXISTE;
 }
 
 

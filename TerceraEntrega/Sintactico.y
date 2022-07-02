@@ -40,6 +40,12 @@ typedef struct
 
 }tablaSimbolos;
 
+typedef struct s_nodo_asm {
+  struct  s_nodo_asm *sig;
+  char info[100];
+} t_nodo_asm;
+typedef t_nodo_asm* t_pila_asm;
+
 tablaSimbolos tb[2000];
 int cantReg=0;
 FILE  *yyin;
@@ -53,6 +59,19 @@ int indiceComparacion=0;
 
 // Para assembler
 	FILE * pfASM; // Final.asm
+
+void generarAssembler();
+void generarEncabezado();
+void generarDatos();
+void generarCodigo(t_lista *listPol);
+void generarFin();
+void createStackAsm(t_pila_asm *p);
+int pushAsm(t_pila_asm *p,char * elemento);
+int popAsm(t_pila_asm* p,char* d);
+int isOpBinary(char *d);
+int isOpUnary(char *d);
+int isLabel(char *d);
+void eqContidion(char* aux);
 
 void cargarTipoDato(tList* symbolTable, tStack* pilaTipoVariables, tStack* pilaVariables);
 char* validarRangoString( char *text );
@@ -560,6 +579,7 @@ factor:
                                     printf("\nREGLA 42: <factor> --> CTE_FLOAT\n");
                                 } 
     |ID                         {   
+                                    //Nota:Agregar validacion para que solo sean tipos int o float en las expresiones
 									insertar_en_polaca(&listaPolaca,$1,cont++);
                                     insertarListaComp($1);
 									printf("\nREGLA 43: <factor> --> ID\n");
@@ -672,6 +692,7 @@ else
     //escribirTablaSimbolos();
     vaciar_polaca(&listaPolaca);
 	escribirTabla(&symbolTable);
+    generarAssembler();
     fclose(fpTabla);
     fclose(yyin);
     return 1;
@@ -1000,11 +1021,9 @@ void compararTiposComp()
 //Funcion que se encarga de generar el archivo y completarlo
 void generarAssembler(){
 	pfASM = fopen("asm/Final.asm", "w");
-    // Creo pilas para tercetos.
-    crear_pila(&pVariables);
     generarEncabezado();
     generarDatos();
-    generarCodigo();
+    generarCodigo(&listaPolaca);
     generarFin();
     fclose(pfASM);
 }
@@ -1022,9 +1041,9 @@ void generarDatos(){
     fprintf(pfASM, "\t\n.DATA\t\t ; comienzo de la zona de datos.\n");
     fprintf(pfASM, "\tTRUE equ 1\n");
     fprintf(pfASM, "\tFALSE equ 0\n");
-    fprintf(pfASM, "\tMAXTEXTSIZE equ %d\n",COTA_STR);
+    fprintf(pfASM, "\tMAXTEXTSIZE equ %d\n",STR_LIMITE);
 
-    tList* auxSimbolos = symbTable;
+    tList* auxSimbolos = &symbolTable;
 	int i;
 	//int tamTS = obtenerTamTS();
 	//for(i=0; i<tamTS; i++)
@@ -1052,6 +1071,10 @@ void generarDatos(){
 			int size = STR_LIMITE - longitud;
 			fprintf(pfASM, "\t%s db %s, '$', %d dup(?)\n", (*auxSimbolos)->name, (*auxSimbolos)->value, size);
 		}
+        
+        fprintf(pfASM,"\n");
+
+        auxSimbolos=&(*auxSimbolos)->next;
 	}
 	
 }
@@ -1069,7 +1092,7 @@ void imprimirFuncString(){
     }
 }
 //adaptar a polaca----------------------------
-void generarCodigo(){
+void generarCodigo(t_lista *listPol){
     fprintf(pfASM, "\n.CODE ;Comienza sector de codigo\n");
 
     imprimirFuncString();
@@ -1081,294 +1104,227 @@ void generarCodigo(){
     fprintf(pfASM, "\tfinit\n\n");
 
 	int i;
-	int tamTercetos = obtenerIndiceActual();
-
-	char aux1[50];
-	char aux2[50];
-	char auxEtiqueta[50];
-
-	int flag;
-	for(i=0; i<tamTercetos; i++)
-	{
-		char operador[50];
-		strcpy(operador,tercetos[i].operador);
-		flag = 0;
-
-		if(strcmp(operador, "=") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;ASIGNACIÓN\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-			char * tipo = recuperarTipoTS(aux1);
-    		char auxTipo[50] = "";
-			strcpy(auxTipo, tipo);
-
-			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
-			{
-				fprintf(pfASM, "\tmov ax,@DATA\n");
-                fprintf(pfASM, "\tmov es,ax\n");
-                fprintf(pfASM, "\tmov si,OFFSET %s ;apunta el origen al auxiliar\n",aux1);
-                fprintf(pfASM, "\tmov di,OFFSET %s ;apunta el destino a la cadena\n",aux2);
-				fprintf(pfASM, "\tcall COPIAR ;copia los string\n\n");
-			}
-			else
-			{
-				fprintf(pfASM, "\tfld %s\n",aux1);
-                fprintf(pfASM, "\tfstp %s\n\n",aux2);
-			}
-		}
-
-		if(strcmp(operador, "CMP") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;CMP\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-			// fprintf(pfASM,"\t%s\n",auxEtiqueta);
-			fprintf(pfASM, "\tfld %s\n",aux1);
-            fprintf(pfASM, "\tfld %s\n",aux2);
-            fprintf(pfASM, "\tfcomp\n");
-            fprintf(pfASM, "\tfstsw ax\n");
-            fprintf(pfASM, "\tfwait\n");
-            fprintf(pfASM, "\tsahf\n\n");
-		}
-
-		if(strstr(operador, "ETIQ") != NULL)
-		{
-			flag = 1;
-			fprintf(pfASM,"\n\n%s:\n",operador);
-		}
-
-		if(strcmp(operador, "JMP") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tjmp %s\n",etiqueta);
-		}
-
-		if(strcmp(operador, "JE") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tje %s\n",etiqueta);
-		}
-
-		if(strcmp(operador, "JNE") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tjne %s\n", etiqueta);
-		}
-
-		if(strcmp(operador, "JB") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tjb %s\n", etiqueta);
-		}
-
-		if(strcmp(operador, "JBE") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tjbe %s\n", etiqueta);
-		}
-
-		if(strcmp(operador, "JA") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tja %s\n", etiqueta);
-		}
-
-		if(strcmp(operador, "JAE") == 0)
-		{
-			flag = 1;
-			int indiceIzquierdo = desarmarIndice(tercetos[i].operandoIzq);
-			char* etiqueta = obtenerTerceto(indiceIzquierdo, 1);
-            fprintf(pfASM, "\tjae %s\n", etiqueta);
-		}
-
-		if(strcmp(operador, "-") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;RESTA\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-            fprintf(pfASM, "\tfld %s\n",aux1);
-            fprintf(pfASM, "\tfld %s\n",aux2);
-            fprintf(pfASM, "\tfsub\n");
-
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
-
-		if(strcmp(operador, "+") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;SUMA\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-			// fprintf(pfASM,"\t%s\n",auxEtiqueta);
-			fprintf(pfASM, "\tfld %s\n",aux1);
-            fprintf(pfASM, "\tfld %s\n",aux2);
-            fprintf(pfASM, "\tfadd\n");
-
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
-
-		if(strcmp(operador, "*") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;MULTIPLICACION\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-			fprintf(pfASM, "\tfld %s\n",aux1);
-            fprintf(pfASM, "\tfld %s\n",aux2);
-            fprintf(pfASM, "\tfmul\n");
-
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
-
-		if(strcmp(operador, "/") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;DIVISION\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-
-			fprintf(pfASM, "\tfld %s\n",aux1);
-            fprintf(pfASM, "\tfld %s\n",aux2);
-            fprintf(pfASM, "\tfdiv\n");
-
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
-
-		if(strcmp(operador, "MOD") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;MOD\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
-			
-			fprintf(pfASM, "\tfld %s\n",aux1);
-			fprintf(pfASM, "\tfld %s\n",aux2);
-			fprintf(pfASM, "\tfdiv\n");
-
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
+    int auxiliar_actual = -1;
+        char auxiliares[10][200] = {"_@varAux1_esddfloat","_@varAux2_esddfloat","_@varAux3_esddfloat","_@varAux4_esddfloat","_@varAux5_esddfloat"
+                                ,"_@varAux6_esddfloat","_@varAux7_esddfloat","_@varAux8_esddfloat","_@varAux9_esddfloat","_@varAux10_esddfloat"};
 
 
-		if(strcmp(operador, "DIV") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;DIV\n");
-			sacar_de_pila(&pVariables,&aux2);
-			sacar_de_pila(&pVariables,&aux1);
+//Pila Assembler
+    t_pila_asm pila;
 
-			fprintf(pfASM, "\tfild %s\n",aux1);
-			fprintf(pfASM, "\tfild %s\n",aux2);
-			fprintf(pfASM, "\tfdiv\n");
+    char operando1[100];
+    char operando2[100];
 
-			char auxStr[50] = "";
-			sprintf(auxStr, "@aux%d",i);
-			fprintf(pfASM, "\tfstp %s\n\n",auxStr);
-			insertarTokenEnTS("",auxStr);
-			poner_en_pila(&pVariables,&auxStr);
-		}
+    createStackAsm(&pila);
+    
 
-		if(strcmp(operador, "READ") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;READ\n");
-			sacar_de_pila(&pVariables,&aux1);
+	fprintf(pfASM,"\n\n\n\n");  // agrego saltos de linea al archivo assembler
+    fprintf(pfASM,".CODE\n;comienzo de la zona de codigo\n\n\nstart:\n");
+    fprintf(pfASM,"mov AX,@DATA\n");
+    fprintf(pfASM,"mov DS,AX\n");
+    fprintf(pfASM,"mov es,ax\n\n\n");
 
-			char * tipo = recuperarTipoTS(aux1);
-    		char auxTipo[50] = "";
-			strcpy(auxTipo, tipo);
+    while(*listPol){
 
-			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
-			{
-				fprintf(pfASM,"\tdisplayString %s\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-			if(strcmp(tipo,"CONST_INT") == 0 || strcmp(tipo,"INTEGER") == 0)
-			{
-   				fprintf(pfASM,"\tDisplayInteger %s 2\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-			if(strcmp(tipo,"CONST_REAL") == 0 || strcmp(tipo,"REAL") == 0)
-			{
-				fprintf(pfASM,"\tDisplayFloat %s 2\n",aux1);
-                fprintf(pfASM, "\tnewLine 1\n\n");
-			}
-		}
+      if(isOpBinary((*listPol)->elemento) == 1){
 
-		if(strcmp(operador, "PRINT") == 0)
-		{
-			flag = 1;
-			fprintf(pfASM,"\t;PRINT\n");
-			sacar_de_pila(&pVariables,&aux1);
+        if(strcmp((*listPol)->elemento,"+")==0){
+          
+          char varAux[50];
+          char contAux[20];
 
-			char * tipo = recuperarTipoTS(aux1);
-    		char auxTipo[50] = "";
-			strcpy(auxTipo, tipo);
+          popAsm(&pila, operando2);
+          popAsm(&pila, operando1);
 
-			if(strcmp(tipo,"CONST_STR") == 0 || strcmp(tipo,"STRING") == 0)
-			{
-				fprintf(pfASM,"\tgetString %s\n\n",aux1);
-			}
-			else
-			{
-				fprintf(pfASM,"\tGetFloat %s\n\n",aux1);
-			}
-		}
+          fprintf(pfASM,"\tFLD %s\n",operando1);
+          fprintf(pfASM,"\tFLD %s\n",operando2);
 
-		if(flag == 0)
-		{
-			char * nombre = recuperarNombreTS(operador);
-			char auxNombre[50] = "";
-			strcpy(auxNombre, nombre);
-      poner_en_pila(&pVariables,&auxNombre);
-		}
-	}
+          fprintf(pfASM,"\tFADD\n");
 
-	while(pila_vacia(&pVariables) != PILA_VACIA)
-	{
-		char varApilada[50] = "";
-		sacar_de_pila(&pVariables, &varApilada);
-	}
+          auxiliar_actual++;
+          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
+          pushAsm(&pila,auxiliares[auxiliar_actual]);
+        } else if(strcmp((*listPol)->elemento,"-")==0){
+          char varAux[50];
+          char contAux[20];
+
+          popAsm(&pila, operando2);
+          popAsm(&pila, operando1);
+
+          fprintf(pfASM,"\tFLD %s\n",operando1);
+          fprintf(pfASM,"\tFLD %s\n",operando2);
+
+          fprintf(pfASM,"\tFSUB\n");
+
+          auxiliar_actual++;
+          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
+          pushAsm(&pila,auxiliares[auxiliar_actual]);
+        } else if(strcmp((*listPol)->elemento, "*")==0){
+          char varAux[50];
+          char contAux[20];
+
+          popAsm(&pila, operando2);
+          popAsm(&pila, operando1);
+
+          fprintf(pfASM,"\tFLD %s\n",operando1);
+          fprintf(pfASM,"\tFLD %s\n",operando2);
+
+          fprintf(pfASM,"\tFMUL\n");
+
+          auxiliar_actual++;
+          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
+          pushAsm(&pila,auxiliares[auxiliar_actual]);
+        } else if(strcmp((*listPol)->elemento, "/")==0) {
+          char varAux[50];
+          char contAux[20];
+
+          popAsm(&pila, operando2);
+          popAsm(&pila, operando1);
+
+          fprintf(pfASM,"\tFLD %s\n",operando1);
+          fprintf(pfASM,"\tFLD %s\n",operando2);
+
+          fprintf(pfASM,"\tFDIV\n");
+
+          auxiliar_actual++;
+          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
+          pushAsm(&pila,auxiliares[auxiliar_actual]);
+        } else if((strcmp((*listPol)->elemento,":=")==0) || (strcmp((*listPol)->elemento,"=")==0)) {
+          char varAux[50];
+          char contAux[20];
+
+          auxiliar_actual = -1;
+          popAsm(&pila, operando1);
+          popAsm(&pila,operando2);
+          fprintf(pfASM,"\tFLD %s\n",operando2);
+          fprintf(pfASM,"\tFSTP %s\n",operando1);
+
+        } else if(strcmp((*listPol)->elemento,"CMP")==0) {
+            auxiliar_actual = -1;
+            listPol=&(*listPol)->sig;
+
+            if(strcmp((*listPol)->elemento,"BEQ")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+
+            listPol=&(*listPol)->sig;
+
+
+            fprintf(pfASM,"\t%s  %s\n","JE", (*listPol)->elemento); // AGREGO PRIMER SALTO
+          } else if(strcmp((*listPol)->elemento,"BNE")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+            listPol=&(*listPol)->sig;
+
+            fprintf(pfASM,"\t%s  %s\n","JNE", (*listPol)->elemento);
+          } else if(strcmp((*listPol)->elemento,"BLT")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+            listPol=&(*listPol)->sig;
+            
+            fprintf(pfASM,"\t%s  %s\n","JB", (*listPol)->elemento); 
+          } else if(strcmp((*listPol)->elemento,"BLE")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+            listPol=&(*listPol)->sig;
+
+            fprintf(pfASM,"\t%s  %s\n","JNA", (*listPol)->elemento); 
+          } else if(strcmp((*listPol)->elemento, "BGT")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+            listPol=&(*listPol)->sig;
+
+            fprintf(pfASM,"\t%s  %s\n","JA", (*listPol)->elemento); 
+          } else if(strcmp((*listPol)->elemento, "BGE")==0) {
+
+            popAsm(&pila, operando1);
+            popAsm(&pila,operando2);
+
+            fprintf(pfASM,"\tFLD %s\n",operando1);
+            fprintf(pfASM,"\tFLD %s\n",operando2);
+
+            fprintf(pfASM,"\tFCOM\n");
+            fprintf(pfASM,"\tFSTSW AX\n");
+            fprintf(pfASM,"\tSAHF\n");
+
+            listPol=&(*listPol)->sig;
+
+            fprintf(pfASM,"\t%s  %s\n","JAE", (*listPol)->elemento); 
+          } 
+        } else if(strcmp((*listPol)->elemento, "BI")==0) {
+
+            listPol=&(*listPol)->sig;
+
+            fprintf(pfASM,"\t%s  %s\n","JMP",(*listPol)->elemento); 
+        }
+      } else if(isOpUnary((*listPol)->elemento) == 1){
+        
+        char varAux[50];
+        
+        popAsm(&pila,varAux);
+
+        fprintf(pfASM,"%s  %s\n","displayString", varAux);
+
+      } else if(isLabel((*listPol)->elemento) == 1){
+          fprintf(pfASM,"%s:\n",(*listPol)->elemento);
+      
+      } else {
+        pushAsm(&pila,(*listPol)->elemento);
+      }
+      listPol=&(*listPol)->sig;
+    }
+    
+    fprintf(pfASM,"\nmov AX, 4c00h  ; termina la ejecucion\n");
+    fprintf(pfASM,"int 21h\n");
+    fprintf(pfASM,"END start;\n;\n");
+
+    fclose(pfASM);
+    
 }
 
 void generarFin(){
@@ -1377,3 +1333,53 @@ void generarFin(){
     fprintf(pfASM, "\tint 21h ;syscall\n");
     fprintf(pfASM, "\nEND START ;final del archivo.");
 }
+void createStackAsm(t_pila_asm *p)
+{
+    *p=NULL;
+}
+int isOpBinary(char *d){
+    if(strcmp(d,"+") == 0 || strcmp(d,"-") == 0 || strcmp(d,"/") == 0 || strcmp(d,"*") == 0 || strcmp(d,"=") == 0 || strcmp(d,"BGE") == 0 || strcmp(d,"BGT") == 0 
+            || strcmp(d,"BLE") == 0 || strcmp(d,"BLT") == 0 || strcmp(d,"BNE") == 0 || strcmp(d,"BEQ") == 0 || strcmp(d,":=") == 0 || strcmp(d,"CMP") == 0
+            || strcmp(d,"MOD") == 0 || strcmp(d,"DIV") == 0 || strcmp(d,"BI") == 0){
+
+        return 1;
+    }
+
+    return 0;
+}
+int isOpUnary(char *d){
+    if(strcmp(d, "GET") == 0 || strcmp(d, "DISPLAY") == 0){
+        return 1;
+    }
+    return 0;
+}
+int isLabel(char *d){
+    if(strncmp(d,"ET",2) == 0) {
+        return 1;
+    }
+    return 0;
+}
+int pushAsm(t_pila_asm *p,char * elemento)
+{
+    t_nodo_asm *nuevo=(t_nodo_asm *)malloc(sizeof(t_nodo_asm));
+    if(nuevo==NULL)
+        return 0;
+    nuevo->sig=*p;
+    strcpy(nuevo->info,elemento);
+    *p=nuevo;
+    return 1;
+}
+
+int popAsm(t_pila_asm* p,char* d)
+{
+    t_nodo_asm* viejo;
+    if(!*p)
+        return 0;
+    viejo=(t_nodo_asm*)malloc(sizeof(t_nodo_asm));
+    viejo=*p;
+    strcpy(d,viejo->info);
+    *p=viejo->sig;
+    free(viejo);
+    return 1;
+}
+
