@@ -29,6 +29,6 @@
 29	CMP
 30	BNE
 31	34
-32	"puto"
+32	"hola"
 33	WRITE
 34	ET_END_IF
