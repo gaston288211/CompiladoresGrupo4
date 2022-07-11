@@ -98,6 +98,7 @@ int obtenerDatos(tList *p, char* name, char* dataType, char* value, int* length)
 
 
 
+
 int insertarNumero(tList *p, char* lex, char* dataType) 
 {
     int result = -1;

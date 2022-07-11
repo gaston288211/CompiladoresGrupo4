@@ -211,9 +211,9 @@ seleccion:
 										cmp=strcmpi(label, LABELFALSE);
 										if (cmp==0) {
 											char NumBiOutOfTheWhile[20];
-											//strcpy(labelIfFalse,"ET_FALSE_IF_");
+											strcpy(labelIfFalse,"ET_FALSE_IF_");
 											itoa(cont+2, NumBiOutOfTheWhile, 10);
-											strcpy(labelIfFalse, NumBiOutOfTheWhile);
+											strcat(labelIfFalse, NumBiOutOfTheWhile);
 											rellenarPolaca2(&listaPolaca, numCell, labelIfFalse);
 										} 
 										else 
@@ -229,7 +229,7 @@ seleccion:
 									insertar_en_polaca(&listaPolaca,"BI",cont++);
 									pushStack2(&pilaNumCelda,labelIfFin,cont);//guardar en pila posicion actual
 									insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
-                                    insertar_en_polaca(&listaPolaca,"ET_FALSE_IF",cont++);
+                                    insertar_en_polaca(&listaPolaca,labelIfFalse,cont++);
 								}
      
     bloque ENDIF	{
@@ -244,12 +244,14 @@ seleccion:
 							if (cmp==0) 
 							{
 								char NumBiOutOfTheWhile[20];
+                                strcpy(labelIfFin,"ET_END_IF_");
+											
 								itoa(cont, NumBiOutOfTheWhile, 10);
-								strcpy(label, NumBiOutOfTheWhile);
-								rellenarPolaca2(&listaPolaca, numCell, label);
+								strcat(labelIfFin, NumBiOutOfTheWhile);
+								rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
 							}
 						}
-                        insertar_en_polaca(&listaPolaca,"ET_END_IF",cont++);
+                        insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
                         printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
 					}
 	|condicion_if bloque ENDIF	{
@@ -264,13 +266,13 @@ seleccion:
 										if (cmp==0) 
 										{
 											char NumBiOutOfTheWhile[20];
-											//strcpy(labelIfFin,"ET_END_IF_");
+											strcpy(labelIfFin,"ET_END_IF_");
 											itoa(cont, NumBiOutOfTheWhile, 10);
-											strcpy(labelIfFin, NumBiOutOfTheWhile);
+											strcat(labelIfFin, NumBiOutOfTheWhile);
 											rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
 										}
 									}		
-                                    insertar_en_polaca(&listaPolaca,"ET_END_IF",cont++);
+                                    insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
 									printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
 								};
 								
@@ -338,8 +340,8 @@ ciclo:
 				
 entrada:
     READ ID {
-				insertar_en_polaca(&listaPolaca,"READ",cont++);
 				insertar_en_polaca(&listaPolaca,$2,cont++);
+				insertar_en_polaca(&listaPolaca,"READ",cont++);
 				printf("\nREGLA 19: <entrada> --> READ ID\n");
 			};
 			
@@ -1069,7 +1071,7 @@ void generarDatos(){
 		{
 			int longitud = (*auxSimbolos)->length;
 			int size = STR_LIMITE - longitud;
-			fprintf(pfASM, "\t%s db %s, '$', %d dup(?)\n", (*auxSimbolos)->name, (*auxSimbolos)->value, size);
+			fprintf(pfASM, "\t%s db \"%s\", '$', %d dup(?)\n", (*auxSimbolos)->name, (*auxSimbolos)->value, size);
 		}
         
         fprintf(pfASM,"\n");
@@ -1093,17 +1095,10 @@ void imprimirFuncString(){
 }
 //adaptar a polaca----------------------------
 void generarCodigo(t_lista *listPol){
-    fprintf(pfASM, "\n.CODE ;Comienza sector de codigo\n");
-
+   
     imprimirFuncString();
 
-    //Comienza codigo usuario
-    fprintf(pfASM, "START: \t\t;Codigo assembler resultante.\n");
-    fprintf(pfASM, "\tmov AX,@DATA \t\t;Comienza sector de datos\n");
-    fprintf(pfASM, "\tmov DS,AX\n");
-    fprintf(pfASM, "\tfinit\n\n");
-
-	int i;
+    int i;
     int auxiliar_actual = -1;
         char auxiliares[10][200] = {"_@varAux1_esddfloat","_@varAux2_esddfloat","_@varAux3_esddfloat","_@varAux4_esddfloat","_@varAux5_esddfloat"
                                 ,"_@varAux6_esddfloat","_@varAux7_esddfloat","_@varAux8_esddfloat","_@varAux9_esddfloat","_@varAux10_esddfloat"};
@@ -1141,9 +1136,7 @@ void generarCodigo(t_lista *listPol){
 
           fprintf(pfASM,"\tFADD\n");
 
-          auxiliar_actual++;
-          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
-          pushAsm(&pila,auxiliares[auxiliar_actual]);
+          
         } else if(strcmp((*listPol)->elemento,"-")==0){
           char varAux[50];
           char contAux[20];
@@ -1156,9 +1149,7 @@ void generarCodigo(t_lista *listPol){
 
           fprintf(pfASM,"\tFSUB\n");
 
-          auxiliar_actual++;
-          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
-          pushAsm(&pila,auxiliares[auxiliar_actual]);
+         
         } else if(strcmp((*listPol)->elemento, "*")==0){
           char varAux[50];
           char contAux[20];
@@ -1171,9 +1162,7 @@ void generarCodigo(t_lista *listPol){
 
           fprintf(pfASM,"\tFMUL\n");
 
-          auxiliar_actual++;
-          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
-          pushAsm(&pila,auxiliares[auxiliar_actual]);
+          
         } else if(strcmp((*listPol)->elemento, "/")==0) {
           char varAux[50];
           char contAux[20];
@@ -1186,17 +1175,10 @@ void generarCodigo(t_lista *listPol){
 
           fprintf(pfASM,"\tFDIV\n");
 
-          auxiliar_actual++;
-          fprintf(pfASM, "\tFSTP %s\n",auxiliares[auxiliar_actual]);
-          pushAsm(&pila,auxiliares[auxiliar_actual]);
+        
         } else if((strcmp((*listPol)->elemento,":=")==0) || (strcmp((*listPol)->elemento,"=")==0)) {
-          char varAux[50];
-          char contAux[20];
-
-          auxiliar_actual = -1;
+          
           popAsm(&pila, operando1);
-          popAsm(&pila,operando2);
-          fprintf(pfASM,"\tFLD %s\n",operando2);
           fprintf(pfASM,"\tFSTP %s\n",operando1);
 
         } else if(strcmp((*listPol)->elemento,"CMP")==0) {
@@ -1302,27 +1284,46 @@ void generarCodigo(t_lista *listPol){
 
             fprintf(pfASM,"\t%s  %s\n","JMP",(*listPol)->elemento); 
         }
-      } else if(isOpUnary((*listPol)->elemento) == 1){
+      } else if(strcmp((*listPol)->elemento, "READ") == 0 ){
+              char varAux[50];
+        
+        popAsm(&pila,varAux);
+        fprintf(pfASM,"GetFloat %s\n",varAux);
+      
+    }else if(strcmp((*listPol)->elemento, "WRITE") == 0 ){
         
         char varAux[50];
         
         popAsm(&pila,varAux);
 
-        fprintf(pfASM,"%s  %s\n","displayString", varAux);
+        fprintf(pfASM,"%s  %s\n","mov dx,OFFSET", varAux);
+        fprintf(pfASM,"mov ah,9\nint 21h\nnewLine 1\n");
 
       } else if(isLabel((*listPol)->elemento) == 1){
           fprintf(pfASM,"%s:\n",(*listPol)->elemento);
       
       } else {
-        pushAsm(&pila,(*listPol)->elemento);
-      }
+    int length , result;
+    char  tipodato[50],  valor[50];
+    //BUSCO EL ELEMTO EN LA TABLA, SI NO EXISTE ES UN NUMERO, TENGO QUE AGREGAR _ AL INICIO
+    result=obtenerDatos(&symbolTable,(*listPol)->elemento,tipodato, valor ,&length);
+        if (result==NO_EXISTE) 
+        {
+            char* newName = formatoString((*listPol)->elemento);
+
+            strcpy(valor,"_");
+            pushAsm(&pila,strcat(valor,newName));
+        }else{
+            pushAsm(&pila,(*listPol)->elemento);
+        }
+    }
       listPol=&(*listPol)->sig;
     }
+
     
     fprintf(pfASM,"\nmov AX, 4c00h  ; termina la ejecucion\n");
     fprintf(pfASM,"int 21h\n");
     fprintf(pfASM,"END start;\n;\n");
-
     fclose(pfASM);
     
 }
@@ -1348,7 +1349,7 @@ int isOpBinary(char *d){
     return 0;
 }
 int isOpUnary(char *d){
-    if(strcmp(d, "GET") == 0 || strcmp(d, "DISPLAY") == 0){
+    if(strcmp(d, "READ") == 0 || strcmp(d, "WRITE") == 0){
         return 1;
     }
     return 0;
