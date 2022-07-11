@@ -1,24 +1,130 @@
 -/ DECLARACION /-
+
 DECVAR
-    a1, a2, b1 : FLOAT
-    variable1, var1, var2 : STRING
+	a1, a2, z : FLOAT
+	vEnt : INTEGER
+	vStr : STRING
+	var, var1, var2, var3, var4 : FLOAT
+	
 ENDDEC
+
 
 a1:=4+7
 a2:=0
- 
+
 WHILE a2<2 DO 
- 
-    IF a1==12
-    THEN
-    WRITE "verdadero"
-    ELSE
-    WRITE "FALSO"
-    ENDIF
-    a2:=a2+1
+
+	IF a1==12 
+	THEN
+		WRITE "VERDADERO"
+	ELSE
+		WRITE "FALSO"
+	ENDIF
+	a2:=a2+1
 ENDWHILE
- 
-READ a1
- 
- 
-WRITE "fin"
+
+
+-/ COMPARACIONES Y ASIGNACIONES  /-
+
+z:= 2
+var2 := 10
+
+IF INLIST (z; [2 ; 18])
+THEN 
+	var1 := var2 + 3
+	WRITE "ENTRO INLIST"
+ELSE
+	var1 := var2 - 3
+	WRITE "NO ENTRO INLIST"
+ENDIF
+
+IF BETWEEN (z, [5 ; 22])
+THEN 
+	var1 := var2 + 3  
+	WRITE "ENTRO BETWEEN"	
+ELSE
+	var1 := var2 - 3
+	WRITE "NO ENTRO BETWEEN"
+ENDIF
+
+
+
+-/ IF /-
+
+IF var1 >= var2 
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+IF var1 <= var2 
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+IF var1 > var2 
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+IF var1 < var2 
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+IF ( NOT var > var2 ) OR var2 != var
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+IF ( NOT var > var2 ) AND var2 != var
+THEN 
+    var1 := var2 + 3
+ENDIF
+
+
+-/ ASIGNACIONES /-
+
+var3 := var4 * 2 
+var3 := var4 + 2 
+var3 := var4 / 2 
+var3 := var4 - 2 
+var4 := -3
+
+
+-/ REALES /-
+
+var := 0.1
+var := 2.3434343
+var := 9.0
+
+
+-/ ENTEROS /-
+
+vEnt := 13000
+vEnt := 2500
+vEnt := 250
+
+
+-/ READ /-
+
+READ var
+
+
+-/ WRITE /-
+
+-/vStr := "HOLA MUNDO"
+WRITE vStr/-
+
+
+WRITE "HOLA MUNDO"
+
+WRITE "CHAU MUNDO"
+
+
+-/ RANGO /-
+
+var := -32768
+-/32769/-
+-/214748364790/-
+-/33333333333333333333333333333333333333333333333333333333333333333333333333333333.5/-
+-/"holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAAholaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaAAAAAAAAAAAAAAAAAA"/-
