@@ -1,22 +1,24 @@
 -/ DECLARACION /-
 DECVAR
-    a1, b1 : FLOAT
+    a1, a2, b1 : FLOAT
     variable1, var1, var2 : STRING
-    p1, p2, p3, z: FLOAT
-    a, b, c, d: INTEGER
 ENDDEC
- 
+
 a1:=4+7
-IF a1==12
-THEN
-WRITE "verdadero"
-ELSE
-WRITE "FALSO"
-ENDIF
-
-
+a2:=0
+ 
+WHILE a2<2 DO 
+ 
+    IF a1==12
+    THEN
+    WRITE "verdadero"
+    ELSE
+    WRITE "FALSO"
+    ENDIF
+    a2:=a2+1
+ENDWHILE
+ 
 READ a1
-
-
-
+ 
+ 
 WRITE "fin"

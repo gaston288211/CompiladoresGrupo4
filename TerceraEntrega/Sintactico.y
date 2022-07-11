@@ -98,6 +98,7 @@ tList  symbolTable;
 
 int cont=1;
 int contIF=0;
+int contWhile=0;
 
 char labelIfFin[30];
 char labelIfTrue[30];
@@ -237,7 +238,7 @@ seleccion:
 						int cmp;
 						char label[20];
                         strcpy(label,"Ini");
-                        while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0)
+                        while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0 && contIF>0)
 						{
 							popStack2(&pilaNumCelda, label, &numCell);
 							cmp=strcmpi(label, labelIfFin);
@@ -250,6 +251,8 @@ seleccion:
 								strcat(labelIfFin, NumBiOutOfTheWhile);
 								rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
 							}
+                            contIF--;
+                            printf("\ncontadorif  %d", contIF);
 						}
                         insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
                         printf("\nREGLA 17: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
@@ -258,8 +261,9 @@ seleccion:
 									int numCell;
 									int cmp;
 									char label[20];
+                                    
                                     strcpy(label,"Ini");
-									while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0)
+									while(!emptyStack(&pilaNumCelda) && strcmpi(label, "IF_ANIDADO")!=0 && contIF>0)
 									{
 										popStack2(&pilaNumCelda, label, &numCell);
 										cmp=strcmpi(label, LABELFALSE);
@@ -271,6 +275,8 @@ seleccion:
 											strcat(labelIfFin, NumBiOutOfTheWhile);
 											rellenarPolaca2(&listaPolaca, numCell, labelIfFin);
 										}
+                                        contIF--;
+                                        printf("\ncontadorif  %d", contIF);
 									}		
                                     insertar_en_polaca(&listaPolaca,labelIfFin,cont++);
 									printf("\nREGLA 18: <seleccion> --> IF <condicion> THEN <bloque> ELSE <bloque> ENDIF\n");
@@ -293,11 +299,12 @@ ciclo:
 	WHILE   {
 				char numCell[10];
 				char labelInitWhile[20];
+                contWhile++;
 				itoa(cont, numCell, 10);
 				strcpy(labelInitWhile, "ET_WHILE_");
 				strcat(labelInitWhile, numCell);
 				strcpy(labelWhile, labelInitWhile);
-				insertar_en_polaca(&listaPolaca, "ET_INICIO_WHILE", cont++);
+				insertar_en_polaca(&listaPolaca, labelWhile, cont++);
 			}
 	condicion DO 	{
 						char NumBiOutOfTheWhile[20];
@@ -313,8 +320,9 @@ ciclo:
 					int numCell;
 					int cmp;
 					char label[20];
-					while(!emptyStack(&pilaNumCelda))
+					while(!emptyStack(&pilaNumCelda) && contWhile>0)
 					{
+                        printf("while tiene datos la pila\n");
 						popStack2(&pilaNumCelda, label, &numCell);
 						cmp=strcmpi(label, LABELFALSE);
 						if (cmp==0) 
@@ -323,8 +331,8 @@ ciclo:
 							char labelBi[20];
 							strcpy(labelBi,"ET_END_WHILE_");
 							itoa(cont, NumBiOutOfTheWhile, 10);
-							rellenarPolaca2(&listaPolaca, numCell, NumBiOutOfTheWhile);
-							strcat(labelBi, NumBiOutOfTheWhile);
+                            strcat(labelBi,NumBiOutOfTheWhile);
+							rellenarPolaca2(&listaPolaca, numCell, labelBi);
                             insertar_en_polaca(&listaPolaca,labelBi,cont++);
 						} 
 						else 
@@ -335,6 +343,7 @@ ciclo:
 								rellenarPolaca2(&listaPolaca, numCell, labelBodyWhile);
 							}
 						}
+                        contWhile--;
 					}
 				};
 				
@@ -575,9 +584,11 @@ termino:
 factor:
     PAR_A expresion PAR_C       {printf("\nREGLA 41: <factor> --> PAR_A<expresion><PAR_C>\n");} 
     |CTE_FLOAT                  {
+                                    char aux[50]="_";
                                     insertar_en_polaca(&listaPolaca,$1,cont++);
                                     insertarNumero(&symbolTable,$1,"CTE_FLOAT");
-                                    insertarListaComp($1);
+                                    strcat(aux,$1);
+                                    insertarListaComp(aux);
                                     printf("\nREGLA 42: <factor> --> CTE_FLOAT\n");
                                 } 
     |ID                         {   
@@ -587,9 +598,11 @@ factor:
 									printf("\nREGLA 43: <factor> --> ID\n");
                                 } 
     |CTE_INTEGER                {
+                                    char aux[50]="_";
 									insertar_en_polaca(&listaPolaca,$1,cont++);
 									insertarNumero(&symbolTable,$1,"CTE_INTEGER");
-                                    insertarListaComp($1);
+                                    strcat(aux,$1);
+                                    insertarListaComp(aux);
 									printf("\nREGLA 44: <factor> --> <CTE_INTEGER>\n");
 								};
 
@@ -947,37 +960,46 @@ void compararTiposAsig()
     result=obtenerDatos(&symbolTable,auxbaseNombre,auxbaseTipo, auxbaseValor ,&lengthbase);
     if(result==0)
     { 
-        printf("primerif\n %d",indiceComparacion);
+        //printf("primerif\n %d",indiceComparacion);
         while(indiceComparacion>0)
         {
-            printf("while %d",indiceComparacion);
+            //printf("while %d",indiceComparacion);
             result=obtenerDatos(&symbolTable,listaComparacion[indiceComparacion],auxcompTipo, auxcompValor ,&lengthcomp);
             //si son iguales Salgo directamente
             if(result==0)
                 { 
-                    printf("\ncompara base: %s --- tipo compara: %s-%s", auxbaseTipo, auxcompTipo,listaComparacion[indiceComparacion]);
+                    //printf("\ncompara base: %s --- tipo compara: %s-%s", auxbaseTipo, auxcompTipo,listaComparacion[indiceComparacion]);
                     if (strcmp(auxbaseTipo, auxcompTipo)!=0)
                     {       
-                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxbaseTipo,"CTE_FLOAT") || strcmp(auxbaseTipo,"FLOAT")))
+                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxcompTipo,"CTE_FLOAT")==0  || strcmp(auxcompTipo,"FLOAT")==0 ))
                         {
                             printf("\nSe esta asignando una expresion tipo float a un entero\n");
                             yyerror();
                         }
-                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxbaseTipo,"CTE_STRING") || strcmp(auxbaseTipo,"STRING")))
+                        if(strcmp(auxbaseTipo,"INTEGER")==0 && (strcmp(auxcompTipo,"CTE_STRING")==0  || strcmp(auxcompTipo,"STRING")==0 ))
                         {
                             printf("\nSe esta asignando una expresion tipo string a un entero\n");
                             yyerror();
                         }
-                        if(strcmp(auxbaseTipo,"FLOAT")==0 && (strcmp(auxbaseTipo,"CTE_STRING") || strcmp(auxbaseTipo,"STRING")))
+                        if(strcmp(auxbaseTipo,"FLOAT")==0 && (strcmp(auxcompTipo,"CTE_STRING")==0  || strcmp(auxcompTipo,"STRING")==0 ))
                         {
                             printf("\nSe esta asignando una expresion tipo string a un float\n");
                             yyerror();
                         }
 
                     }
+                }else if (result==NO_EXISTE)
+                {
+                    printf("\nError %s no fue declarado\n",listaComparacion[indiceComparacion]);
+                    yyerror();
                 }
             indiceComparacion--;
         }
+    }
+    else if (result==NO_EXISTE)
+    {
+        printf("\nError %s no fue declarado\n",listaComparacion[0]);
+        yyerror();
     }
     indiceComparacion=0;
 }
@@ -996,17 +1018,17 @@ void compararTiposComp()
         //si son iguales Salgo directamente
         if (strcmp(auxbaseTipo, auxcompTipo)!=0)
         {       
-            if(strcmp(auxbaseTipo,"CTE_INTEGER")==0 && strcmp(auxbaseTipo,"CTE_FLOAT"))
+            if(strcmp(auxbaseTipo,"CTE_INTEGER")==0 && strcmp(auxbaseTipo,"CTE_FLOAT")==0 )
             {
                 printf("\nSe esta asignando una expresion tipo float a un entero\n");
                 yyerror();
             }
-            if(strcmp(auxbaseTipo,"CTE_INTEGER")==0 && strcmp(auxbaseTipo,"CTE_STRING"))
+            if(strcmp(auxbaseTipo,"CTE_INTEGER")==0 && strcmp(auxbaseTipo,"CTE_STRING")==0 )
             {
                 printf("\nSe esta asignando una expresion tipo string a un entero\n");
                 yyerror();
             }
-            if(strcmp(auxbaseTipo,"CTE_FLOAT")==0 && strcmp(auxbaseTipo,"CTE_STRING"))
+            if(strcmp(auxbaseTipo,"CTE_FLOAT")==0 && strcmp(auxbaseTipo,"CTE_STRING")==0 )
             {
                 printf("\nSe esta asignando una expresion tipo string a un float\n");
                 yyerror();

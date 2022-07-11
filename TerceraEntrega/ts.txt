@@ -3,23 +3,19 @@ ______________________________TABLA DE SIMBOLOS_______________________________
 _______________________________________________________________________________
 |NOMBRE                   |TIPODATO      |VALOR                    |LONGITUD  |
 _______________________________________________________________________________
+|_0                       |CTE_INTEGER   |0                        |0         |
+|_1                       |CTE_INTEGER   |1                        |0         |
 |_12                      |CTE_INTEGER   |12                       |0         |
+|_2                       |CTE_INTEGER   |2                        |0         |
 |_4                       |CTE_INTEGER   |4                        |0         |
 |_7                       |CTE_INTEGER   |7                        |0         |
 |_FALSO                   |CTE_STRING    |FALSO                    |5         |
 |_fin                     |CTE_STRING    |fin                      |3         |
 |_verdadero               |CTE_STRING    |verdadero                |9         |
-|a                        |INTEGER       |                         |0         |
 |a1                       |FLOAT         |                         |0         |
-|b                        |INTEGER       |                         |0         |
+|a2                       |FLOAT         |                         |0         |
 |b1                       |FLOAT         |                         |0         |
-|c                        |INTEGER       |                         |0         |
-|d                        |INTEGER       |                         |0         |
-|p1                       |FLOAT         |                         |0         |
-|p2                       |FLOAT         |                         |0         |
-|p3                       |FLOAT         |                         |0         |
 |var1                     |STRING        |                         |0         |
 |var2                     |STRING        |                         |0         |
 |variable1                |STRING        |                         |0         |
-|z                        |FLOAT         |                         |0         |
 _______________________________________________________________________________
